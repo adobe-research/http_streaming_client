@@ -1,0 +1,19 @@
+http-streaming-client 0.6.0 (pending)
+========================================
+* added adobe firehose performance test client
+* improved error handling for adobe firehose client
+
+http-streaming-client 0.5.0 (10.25.2013)
+========================================
+* Added support for the Adobe Analytics Firehose
+* Refactored OAuth support to be extensible and support Adobe and Twitter mechanisms
+* Refactored streaming support to support both chunked transfer encoding and line-oriented HTTP 1.1 streaming
+* Refactored decompression support to support both compressed chunked transfer encoding and compressed line-oriented HTTP 1.1 streaming
+* Added Adobe Firehose and Twitter Firehose command line scripts
+* Added unit test coverage reports with simplecov
+
+http-streaming-client 0.1.0 (10.23.2013)
+========================================
+* initial commit
+* HTTP client with streaming support for GZIP compressed streams and chunked transfer encoding
+* unit test suite
