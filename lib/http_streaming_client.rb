@@ -1,5 +1,5 @@
-require "http_streaming_client/version"
-
 module HttpStreamingClient
-  # Your code goes here...
+  require 'http_streaming_client/version'
+  require 'http_streaming_client/client'
+  require 'http_streaming_client/custom_logger'
 end
