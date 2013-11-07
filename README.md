@@ -96,10 +96,11 @@ An HTML coverage report is generated at the end of a full test run in the covera
 
 Take a look at
 
-* http_streaming_client_spec.rb
+* spec/client_spec.rb
 * tools/adobe_firehose.rb
 * tools/adobe_firehose_performance_test.rb
 * tools/twitter_firehose.rb
+* tools/twitter_firehose_performance_test.rb
 
 ## TODO
 
