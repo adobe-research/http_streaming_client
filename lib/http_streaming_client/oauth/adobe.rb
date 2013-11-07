@@ -32,7 +32,7 @@ module HttpStreamingClient
 	url_string = "#{uri.scheme}://#{uri.host}#{uri.path}"
 
 	# POST to uri
-	response = post(uri, params_string, {:headers => {'Authorization' => "Basic #{basicAuth}"}})
+	response = HttpStreamingClient::Client.post(uri, params_string, {:headers => {'Authorization' => "Basic #{basicAuth}"}})
 	response_json = JSON.parse(response)
 
 	logger.debug "token API response: #{response_json}"

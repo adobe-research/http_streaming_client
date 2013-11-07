@@ -16,3 +16,5 @@ test/tmp
 test/version_tmp
 tmp
 test.log
+lib/http_streaming_client/credentials/adobe.rb
+lib/http_streaming_client/credentials/twitter.rb

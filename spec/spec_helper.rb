@@ -8,7 +8,7 @@ end
 
 require 'http_streaming_client'
 
-NUM_JSON_RECORDS_TO_RECEIVE = 5
+NUM_JSON_RECORDS_TO_RECEIVE = 1
 
 RSpec.configure do |config|
 
@@ -16,4 +16,8 @@ RSpec.configure do |config|
   HttpStreamingClient.logger.level = Logger::DEBUG
   HttpStreamingClient.logger.logfile = true
 
+end
+
+def logger
+  HttpStreamingClient.logger
 end

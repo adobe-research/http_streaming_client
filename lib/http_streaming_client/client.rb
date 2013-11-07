@@ -16,9 +16,11 @@ module HttpStreamingClient
     ALLOWED_MIME_TYPES = ["application/json", "text/plain", "text/html"]
 
     def initialize(opts = {})
+      logger.debug("Client.new: #{opts}")
       @socket = nil
       @interrupted = false
-      @compression_requested = opts[:compression_requested] ? opts[:compression_requested] : true
+      @compression_requested = opts[:compression].nil? ? true : opts[:compression]
+      logger.debug("compression is #{@compression_requested}")
     end
 
     def self.logger
@@ -27,7 +29,7 @@ module HttpStreamingClient
 
     def self.get(uri, opts = {}, &block)
       logger.debug("get:#{uri}")
-      request("GET", uri, opts, &block)
+      self.new.request("GET", uri, opts, &block)
     end
 
     def get(uri, opts = {}, &block)
@@ -42,7 +44,7 @@ module HttpStreamingClient
 
     def self.post(uri, body, opts = {}, &block)
       logger.debug("post:#{uri}")
-      request("POST", uri, opts.merge({:body => body}), &block)
+      self.new.request("POST", uri, opts.merge({:body => body}), &block)
     end
 
     def post(uri, body, opts = {}, &block)
@@ -58,12 +60,10 @@ module HttpStreamingClient
     def interrupt
       logger.debug("interrupt")
       @interrupted = true
-      @socket.close
+      @socket.close unless @socket.nil?
     end
 
-    protected
-
-    def self.request(method, uri, opts = {}, &block)
+    def request(method, uri, opts = {}, &block)
       logger.debug("Client::request:#{method}:#{uri}")
 
       if uri.is_a?(String)
@@ -273,19 +273,19 @@ module HttpStreamingClient
 	  return response
 
 	end
-
       end
     ensure
+      logger.debug "ensure socket closed"
       socket.close if !socket.nil? and !socket.closed?
     end
 
     private
 
-    def self.camelize_header_name(header_name)
+    def camelize_header_name(header_name)
       (header_name.split('-').map {|s| s.capitalize}).join('-')
     end
 
-    def self.initialize_socket(uri, opts = {})
+    def initialize_socket(uri, opts = {})
       return opts[:socket] if opts[:socket]
 
       if uri.is_a?(String)
