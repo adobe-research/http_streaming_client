@@ -68,7 +68,7 @@ module HttpStreamingClient
     end
 
     def request(method, uri, opts = {}, &block)
-      logger.debug("Client::request:#{method}:#{uri}")
+      logger.debug("Client::request:#{method}:#{uri}:#{opts}")
 
       if uri.is_a?(String)
 	uri = URI.parse(uri)
@@ -94,7 +94,7 @@ module HttpStreamingClient
       end
 
       encodings = []
-      encodings << "gzip" if @compression_requested or opts[:compression]
+      encodings << "gzip" if (@compression_requested and opts[:compression].nil?) or opts[:compression]
       if encodings.any?
 	default_headers["Accept-Encoding"] = "#{encodings.join(',')}"
       end
