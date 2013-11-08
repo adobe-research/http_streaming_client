@@ -19,6 +19,10 @@ module HttpStreamingClient
       HttpStreamingClient.logger
     end
 
+    def logger
+      HttpStreamingClient.logger
+    end
+
     def initialize(opts = {})
       logger.debug("Client.new: #{opts}")
       @socket = nil
