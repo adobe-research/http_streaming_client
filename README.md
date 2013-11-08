@@ -1,6 +1,6 @@
 # HttpStreamingClient
 
-Pure Ruby HTTP client with support for HTTP 1.1 streaming, GZIP and zlib compressed streams, and chunked transfer encoding. Includes extensible OAuth support for the following:
+Ruby HTTP client with support for HTTP 1.1 streaming, GZIP and zlib compressed streams, and chunked transfer encoding. Includes extensible OAuth support for the following:
 
 * Adobe Analytics Firehose
 * Twitter Streaming APIs
