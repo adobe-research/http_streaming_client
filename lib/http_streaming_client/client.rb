@@ -94,7 +94,7 @@ module HttpStreamingClient
       end
 
       encodings = []
-      encodings << "gzip" if @compression_requested or opts[:compression_requested]
+      encodings << "gzip" if @compression_requested or opts[:compression]
       if encodings.any?
 	default_headers["Accept-Encoding"] = "#{encodings.join(',')}"
       end
