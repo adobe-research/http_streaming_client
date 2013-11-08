@@ -14,8 +14,10 @@ module HttpStreamingClient
 
   class CustomLoggerInternal
 
-    @console = nil
-    @logfile = nil
+    def initialize
+      @console = nil
+      @logfile = nil
+    end
 
     def method_missing(name, *args)
       if !@console.nil?
@@ -34,7 +36,7 @@ module HttpStreamingClient
 
     def console=(enable)
       return (@console = nil) if !enable
-      @console = defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
+      @console = Logger.new(STDOUT)
       @console.formatter = ColoredLogFormatter.new
       @console.level = Logger::INFO
     end
@@ -53,4 +55,11 @@ module HttpStreamingClient
     return @@custom_logger_internal = CustomLoggerInternal.new
   end
 
+  def logger=(logger)
+    @@custom_logger_internal = logger
+  end
+
+  def self.logger=(logger)
+    @@custom_logger_internal = logger
+  end
 end
