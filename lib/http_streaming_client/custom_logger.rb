@@ -43,14 +43,14 @@ module HttpStreamingClient
 
   end
 
-  @@custom_logger_internal = nil
+  @custom_logger_internal = nil
 
   def self.logger
-    return @@custom_logger_internal unless @@custom_logger_internal.nil?
-    return @@custom_logger_internal = CustomLoggerInternal.new
+    return @custom_logger_internal unless @custom_logger_internal.nil?
+    return @custom_logger_internal = CustomLoggerInternal.new
   end
 
   def self.logger=(logger)
-    @@custom_logger_internal = logger
+    @custom_logger_internal = logger
   end
 end
