@@ -5,6 +5,7 @@ module HttpStreamingClient
     initializer 'railties.configure_rails_initialization' do
       puts "RAILTIE CALLED"
       HttpStreamingClient.logger = Rails.logger
+      puts "logger is #{HttpStreamingClient.logger}"
     end
   end
 end
