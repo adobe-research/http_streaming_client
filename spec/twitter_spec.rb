@@ -20,7 +20,7 @@ describe HttpStreamingClient do
 
     it "should successfully retrieve JSON records from the firehose" do
       expect {
-	client = HttpStreamingClient::Client.new(request_compression: false)
+	client = HttpStreamingClient::Client.new(compression: false)
 	response = client.get(url, {:headers => {'Authorization' => "#{authorization}" }}) { |line|
 	count = count + 1
 	if count > NUM_JSON_RECORDS_TO_RECEIVE then
@@ -45,7 +45,7 @@ describe HttpStreamingClient do
 
     it "should successfully retrieve decompressed JSON records from the firehose" do
       expect {
-	client = HttpStreamingClient::Client.new(request_compression: true)
+	client = HttpStreamingClient::Client.new(compression: true)
 	response = client.get(url, {:headers => {'Authorization' => "#{authorization}" }}) { |line|
 	count = count + 1
 	if count > NUM_JSON_RECORDS_TO_RECEIVE then
