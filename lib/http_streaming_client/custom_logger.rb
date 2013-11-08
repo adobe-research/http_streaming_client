@@ -45,18 +45,9 @@ module HttpStreamingClient
 
   @@custom_logger_internal = nil
 
-  def logger
-    return @@custom_logger_internal unless @@custom_logger_internal.nil?
-    return @@custom_logger_internal = CustomLoggerInternal.new
-  end
-
   def self.logger
     return @@custom_logger_internal unless @@custom_logger_internal.nil?
     return @@custom_logger_internal = CustomLoggerInternal.new
-  end
-
-  def logger=(logger)
-    @@custom_logger_internal = logger
   end
 
   def self.logger=(logger)
