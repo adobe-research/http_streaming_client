@@ -15,16 +15,16 @@ module HttpStreamingClient
 
     ALLOWED_MIME_TYPES = ["application/json", "text/plain", "text/html"]
 
+    def self.logger
+      HttpStreamingClient.logger
+    end
+
     def initialize(opts = {})
       logger.debug("Client.new: #{opts}")
       @socket = nil
       @interrupted = false
       @compression_requested = opts[:compression].nil? ? true : opts[:compression]
       logger.debug("compression is #{@compression_requested}")
-    end
-
-    def self.logger
-      HttpStreamingClient.logger
     end
 
     def self.get(uri, opts = {}, &block)
