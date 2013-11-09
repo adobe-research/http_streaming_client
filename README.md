@@ -23,7 +23,7 @@ Then install the gem with:
 
 Add this line to your application's Gemfile:
 
-    gem 'http_streaming_client', :git => 'git@git.corp.adobe.com:tompkins/http_streaming_client.git'
+    gem 'http_streaming_client', :git => 'git@github.com:adobe-research/http_streaming_client.git'
 
 And then execute:
 
