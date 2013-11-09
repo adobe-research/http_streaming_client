@@ -65,7 +65,7 @@ module HttpStreamingClient
       protected
 
       def decompress(compressed_packet)
-	@buf ||= GZipStringIO.new
+	@buf ||= GZipBufferIO.new
 	@buf << compressed_packet
 
 	# pass at least 2k bytes to GzipReader to avoid zlib EOF
@@ -75,14 +75,14 @@ module HttpStreamingClient
 	end
       end
 
-      class GZipStringIO
+      class GZipBufferIO
 
 	def logger
 	  HttpStreamingClient.logger
 	end
 
 	def initialize(string="")
-	  logger.debug "GZipStringIO:initialize"
+	  logger.debug "GZipBufferIO:initialize"
 	  @packet_stream = string
 	end
 
@@ -96,7 +96,7 @@ module HttpStreamingClient
 
 	# called by GzipReader
 	def read(length=nil, buffer=nil)
-	  logger.debug "GZipStringIO:read:packet_stream:#{@packet_stream.nil? ? 'nil' : 'not nil'}"
+	  logger.debug "GZipBufferIO:read:packet_stream:#{@packet_stream.nil? ? 'nil' : 'not nil'}"
 	  buffer ||= ""
 	  length ||= 0
 	  buffer << @packet_stream[0..(length-1)]
@@ -113,7 +113,7 @@ module HttpStreamingClient
       private
 
       def process_decompressed_packet(decompressed_packet)
-	logger.debug "GZipStringIO:process_decompressed_packet"
+	logger.debug "GZipBufferIO:process_decompressed_packet"
 	if decompressed_packet && decompressed_packet.size > 0
 	  @packet_callback.call(decompressed_packet)
 	end
