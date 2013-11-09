@@ -9,6 +9,7 @@ end
 require 'http_streaming_client'
 
 NUM_JSON_RECORDS_TO_RECEIVE = 5
+TIMEOUT_SEC = 90
 
 RSpec.configure do |config|
 

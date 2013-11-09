@@ -113,7 +113,7 @@ module HttpStreamingClient
       private
 
       def process_decompressed_packet(decompressed_packet)
-	logger.debug "GZipBufferIO:process_decompressed_packet"
+	logger.debug "GZipBufferIO:process_decompressed_packet:size:#{decompressed_packet.nil? ? "nil" : decompressed_packet.size}"
 	if decompressed_packet && decompressed_packet.size > 0
 	  @packet_callback.call(decompressed_packet)
 	end
