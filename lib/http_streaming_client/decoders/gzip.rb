@@ -33,89 +33,93 @@ module HttpStreamingClient
 
   module Decoders
 
-    class Base
+    class GZip
 
-      def initialize(&chunk_callback)
-	@chunk_callback = chunk_callback
+      def logger
+	HttpStreamingClient.logger
       end
 
-      def <<(compressed)
-	return unless compressed && compressed.size > 0
-	decompressed = decompress(compressed)
-	receive_decompressed decompressed
+      def initialize(&packet_callback)
+	logger.debug "GZip:initialize"
+	@packet_callback = packet_callback
       end
 
-      def finalize!
-	decompressed = finalize
-	receive_decompressed decompressed
+      def <<(compressed_packet)
+	return unless compressed_packet && compressed_packet.size > 0
+	decompressed_packet = decompress(compressed_packet)
+	process_decompressed_packet(decompressed_packet)
       end
 
-      private
-
-      def receive_decompressed(decompressed)
-	if decompressed && decompressed.size > 0
-	  @chunk_callback.call(decompressed)
+      def close
+	logger.debug "GZip:close"
+	decompressed_packet = ""
+	begin
+	  @gzip ||= Zlib::GzipReader.new @buf
+	  decompressed_packet = @gzip.readline
+	rescue Zlib::Error
+	  raise DecoderError
 	end
+	process_decompressed_packet(decompressed_packet)
       end
 
       protected
 
-      # Must return a part of decompressed
-      def decompress(compressed)
-	nil
-      end
+      def decompress(compressed_packet)
+	@buf ||= GZipStringIO.new
+	@buf << compressed_packet
 
-      # May return last part
-      def finalize
-	nil
-      end
-    end
-
-    class GZip < Base
-
-      def decompress(compressed)
-	@buf ||= StringIO.new
-	@buf << compressed
-
-	# Zlib::GzipReader loads input in 2kbyte chunks
+	# pass at least 2k bytes to GzipReader to avoid zlib EOF
 	if @buf.size > 2048
 	  @gzip ||= Zlib::GzipReader.new @buf
 	  @gzip.readline
 	end
       end
 
-      def finalize
-	begin
-	  @gzip ||= Zlib::GzipReader.new @buf
-	  @gzip.read
-	rescue Zlib::Error
-	  raise DecoderError
-	end
-      end
+      class GZipStringIO
 
-      class StringIO
+	def logger
+	  HttpStreamingClient.logger
+	end
+
 	def initialize(string="")
-	  @stream = string
+	  logger.debug "GZipStringIO:initialize"
+	  @packet_stream = string
 	end
 
 	def <<(string)
-	  @stream << string
+	  @packet_stream << string
 	end
 
+	def eof?
+	  @packet_stream.nil?
+	end
+
+	# called by GzipReader
 	def read(length=nil, buffer=nil)
+	  logger.debug "GZipStringIO:read:packet_stream:#{@packet_stream.nil? ? 'nil' : 'not nil'}"
 	  buffer ||= ""
 	  length ||= 0
-	  buffer << @stream[0..(length-1)]
-	  @stream = @stream[length..-1]
+	  buffer << @packet_stream[0..(length-1)]
+	  @packet_stream = @packet_stream[length..-1]
 	  buffer
 	end
 
+	# called by GzipReader
 	def size
-	  @stream.size
+	  @packet_stream.size
 	end
       end
-    end
 
+      private
+
+      def process_decompressed_packet(decompressed_packet)
+	logger.debug "GZipStringIO:process_decompressed_packet"
+	if decompressed_packet && decompressed_packet.size > 0
+	  @packet_callback.call(decompressed_packet)
+	end
+      end
+
+    end
   end
 
 end

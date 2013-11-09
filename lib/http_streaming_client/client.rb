@@ -309,6 +309,7 @@ module HttpStreamingClient
       end
     ensure
       logger.debug "ensure socket closed"
+      decoder.close if !decoder.nil?
       socket.close if !socket.nil? and !socket.closed?
     end
 
