@@ -45,7 +45,7 @@ Or install it yourself as:
 
 ## Version
 
-Current release version: 0.5.0 (see <a href="https://github.com/adobe-research/http_streaming_client/releases">RELEASES</a>)
+Current release version: 0.8.0 (see <a href="https://github.com/adobe-research/http_streaming_client/releases">RELEASES</a>)
 
 ## Logging
 
