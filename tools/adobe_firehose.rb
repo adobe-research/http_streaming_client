@@ -26,6 +26,11 @@ response = client.get(STREAMURL, {:headers => {'Authorization' => "Bearer #{auth
       next
     end
 
+    if line.eql? "\r\n" then
+      puts "Server ping received"
+      next
+    end
+
     begin
       json = JSON.parse(line)
       puts json.to_s

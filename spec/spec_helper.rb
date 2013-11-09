@@ -8,7 +8,7 @@ end
 
 require 'http_streaming_client'
 
-NUM_JSON_RECORDS_TO_RECEIVE = 1
+NUM_JSON_RECORDS_TO_RECEIVE = 5
 
 RSpec.configure do |config|
 

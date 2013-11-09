@@ -23,8 +23,25 @@ describe HttpStreamingClient do
       expect {
 	client = HttpStreamingClient::Client.new(compression: false)
 	response = client.get(STREAMURL, {:headers => {'Authorization' => "Bearer #{authorization}" }}) { |line|
-	  logger.debug "#{JSON.parse(line).to_s}"
+
+	  if line.nil? then
+	    logger.debug "error:nil line received"
+	    next
+	  end
+
+	  if line.size == 0 then
+	    logger.debug "error:zero length line received"
+	    next
+	  end
+	  
 	  line_count = line_count + 1
+
+	  if line.eql? "\r\n" then
+	    logger.debug "Server ping received"
+	  else
+	    logger.debug "#{JSON.parse(line).to_s}"
+	  end
+
 	  interrupt if line_count > NUM_JSON_RECORDS_TO_RECEIVE }
       }.to_not raise_error
     end
@@ -45,9 +62,26 @@ describe HttpStreamingClient do
       expect {
 	client = HttpStreamingClient::Client.new(compression: true)
 	response = client.get(STREAMURL, {:headers => {'Authorization' => "Bearer #{authorization}" }}) { |line|
-	logger.debug "#{JSON.parse(line).to_s}"
-	line_count = line_count + 1
-	interrupt if line_count > NUM_JSON_RECORDS_TO_RECEIVE }
+
+	  if line.nil? then
+	    logger.debug "error:nil line received"
+	    next
+	  end
+
+	  if line.size == 0 then
+	    logger.debug "error:zero length line received"
+	    next
+	  end
+	  
+	  line_count = line_count + 1
+
+	  if line.eql? "\r\n" then
+	    logger.debug "Server ping received"
+	  else
+	    logger.debug "#{JSON.parse(line).to_s}"
+	  end
+
+	  interrupt if line_count > NUM_JSON_RECORDS_TO_RECEIVE }
       }.to_not raise_error
     end
 
