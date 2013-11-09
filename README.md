@@ -19,7 +19,7 @@ Then install the gem with:
 
     $ gem install http_streaming_client
 
-## Installation (via Adobe github)
+## Installation (via Github)
 
 Add this line to your application's Gemfile:
 
