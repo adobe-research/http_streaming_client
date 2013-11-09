@@ -47,13 +47,29 @@ Or install it yourself as:
 
 Current release version: 0.5.0 (see <a href="https://github.com/adobe-research/http_streaming_client/releases">RELEASES</a>)
 
+## Logging
+
+HTTP protocol trace logging is available as :debug level logging. The gem supports configurable logging to both STDOUT and a log file, and includes a Railtie to use Rails.logger when the gem is included in a Rails application.
+
+To configure gem logging to STDOUT, specify the following in your code:
+
+    HttpStreamingClient.logger.console = true
+
+To configure gem logging to a log file named "test.log", specify the following in your code:
+
+    HttpStreamingClient.logger.logfile = true
+
+And to set the log level, specify the following in your code (e.g. to set the log level to :debug):
+
+    HttpStreamingClient.logger.level = Logger::DEBUG
+
 ## Streaming Service Credentials
 
 The command line tools for the Adobe Analytics Firehose and Twitter's Streaming APIs require valid Adobe and Twitter credentials. Unit tests execute against the Twitter sample firehose and the Adobe Analytics Firehose and also require valid service credentials.
 
-To configure Adobe Analytics Firehose credentials, copy lib/http/credentials/adobe.rb.sample to lib/http/credentials/adobe.rb, and edit the file to include valid Adobe Analytics Firehose API credentials.
+To configure Adobe Analytics Firehose credentials, copy lib/http_streaming_client/credentials/adobe.rb.sample to lib/http_streaming_client/credentials/adobe.rb, and edit the file to include valid Adobe Analytics Firehose API credentials.
 
-To configure Twitter credentials, copy lib/http/credentials/twitter.rb.sample to lib/http/credentials/twitter.rb, and edit the file to include valid Twitter API credentials.
+To configure Twitter credentials, copy lib/http_streaming_client/credentials/twitter.rb.sample to lib/http_streaming_client/credentials/twitter.rb, and edit the file to include valid Twitter API credentials.
 
 ## Command Line Tools
 
@@ -75,7 +91,13 @@ To run the sample Twitter Firehose client, execute the following after configuri
 
     $ ruby tools/twitter_firehose.rb
 
-Both tools emit JSON object streams to stdout.
+To run the Twitter Firehose performance test client, execute the following after configuring valid service credentials:
+
+    $ ruby tools/twitter_firehose_performance_test.rb
+
+The performance metrics output and tunable settings in the script are identical to those for the Adobe Analytics Firehose performance test client.
+
+All tools emit JSON object streams to stdout.
 
 ## Unit Test Coverage
 
