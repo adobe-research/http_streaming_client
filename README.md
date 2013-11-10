@@ -1,4 +1,4 @@
-# HttpStreamingClient
+# HttpStreamingClient [![Coverage Status](https://coveralls.io/repos/adobe-research/http_streaming_client/badge.png)](https://coveralls.io/r/adobe-research/http_streaming_client)
 
 Ruby HTTP client with support for HTTP 1.1 streaming, GZIP and zlib compressed streams, and chunked transfer encoding. Includes extensible OAuth support for the following:
 
