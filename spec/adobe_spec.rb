@@ -55,6 +55,32 @@ describe HttpStreamingClient do
     end
   end
 
+  describe "adobe firehose streaming get test, no compression, no block" do
+
+    url = TOKENAPIHOST
+    authorization = HttpStreamingClient::Oauth::Adobe.generate_authorization(url, USERNAME, PASSWORD, CLIENTID, CLIENTSECRET)
+
+    subject { authorization }
+    it { should_not be_nil}
+    it { should be_instance_of(String) }
+
+    line_count = 0
+
+    it "should successfully retrieve JSON records from the firehose" do
+      expect {
+	client = HttpStreamingClient::Client.new(compression: false)
+	begin
+	  status = Timeout::timeout(TIMEOUT_SEC) {
+	    response = client.get(STREAMURL, {:headers => {'Authorization' => "Bearer #{authorization}" }})
+	  }
+	rescue Timeout::Error
+	  logger.debug "Timeout occurred, #{TIMEOUT_SEC} seconds elapsed"
+	  client.interrupt
+	end
+      }.to_not raise_error
+    end
+  end
+
   describe "adobe firehose streaming get test, GZIP compression" do
 
     url = TOKENAPIHOST

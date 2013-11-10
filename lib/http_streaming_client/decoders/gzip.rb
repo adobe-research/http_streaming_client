@@ -90,10 +90,6 @@ module HttpStreamingClient
 	  @packet_stream << string
 	end
 
-	def eof?
-	  @packet_stream.nil?
-	end
-
 	# called by GzipReader
 	def read(length=nil, buffer=nil)
 	  logger.debug "GZipBufferIO:read:packet_stream:#{@packet_stream.nil? ? 'nil' : 'not nil'}"
