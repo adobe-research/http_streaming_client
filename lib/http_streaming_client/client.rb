@@ -195,6 +195,7 @@ module HttpStreamingClient
 	partial = nil
 	decoder = nil
 	response = ""
+
 	if response_compression then
 	  logger.debug "response compression detected"
 	  if block_given? then
@@ -210,8 +211,14 @@ module HttpStreamingClient
 
 	while !socket.eof? && (line = socket.gets)
 	  chunkLeft = 0
-	  break if line.match /^0.*?\r\n/
-	    next if line == "\r\n"
+
+	  if line.match /^0*?\r\n/ then
+	    logger.debug "received zero length chunk, chunked encoding EOF"
+	    break
+	  end
+
+	  next if line == "\r\n"
+
 	  size = line.hex
 	  logger.debug "chunk size:#{size}"
 
@@ -229,22 +236,18 @@ module HttpStreamingClient
 	  return if @interrupted
 
 	  if response_compression then
-	    if block_given? then
 	      decoder << partial
-	    else
-	      response << partial
-	    end
 	  else
 	    if block_given? then
 	      yield partial
 	    else
 	      logger.debug "no block specified, returning chunk results and halting streaming response"
-	      return partial
+	      response << partial
 	    end
 	  end
 	end
 
-	return partial # returning the last chunk as the return value, handles single chunk chunked responses without a block handler
+	return response
 
       else
 	# Not chunked transfer encoding, but potentially gzip'd, and potentially streaming with content-length = 0

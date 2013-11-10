@@ -17,8 +17,38 @@ describe HttpStreamingClient do
     it { should_not be_nil}
   end
 
-  describe "static get test HTTPS" do
-    response = HttpStreamingClient::Client.get("https://www.google.com/") { |chunk| logger.debug "got a chunk" }
+  describe "client instance get test with basic auth in URL" do
+    client = HttpStreamingClient::Client.new
+    response = client.get "http://a:b@www.google.com/"
+    logger.debug "response: #{response}"
+    subject { response }
+    it { should_not be_nil}
+  end
+
+  describe "client instance get test, chunked transfer, GZIP compression, no block" do
+    client = HttpStreamingClient::Client.new(compression: true)
+    response = client.get "http://www.yahoo.com/"
+    logger.debug "response: #{response}"
+    subject { response }
+    it { should_not be_nil}
+  end
+
+  describe "static get test HTTPS, no compression" do
+    response = HttpStreamingClient::Client.get("https://www.google.com/", compression: false) { |chunk| logger.debug "got a chunk" }
+    logger.debug "response: #{response}"
+    subject { response }
+    it { should_not be_nil}
+  end
+  
+  describe "static get test HTTPS with compression" do
+    response = HttpStreamingClient::Client.get("https://www.google.com/", compression: true)
+    logger.debug "response: #{response}"
+    subject { response }
+    it { should_not be_nil}
+  end
+
+  describe "static get test HTTPS with compression and block" do
+    response = HttpStreamingClient::Client.get("https://www.google.com/", compression: true) { |chunk| logger.debug "got a chunk" }
     logger.debug "response: #{response}"
     subject { response }
     it { should_not be_nil}
@@ -37,8 +67,16 @@ describe HttpStreamingClient do
     it { should_not be_nil}
   end
   
-  describe "client instance post test" do
-    client = HttpStreamingClient::Client.new
+  describe "client instance post test, no compression" do
+    client = HttpStreamingClient::Client.new(compression: false)
+    response = client.post "http://posttestserver.com/post.php", "v=1.0&rsz=large&hl=en&geo=25187&key=ABQIAAAAh-n5SAB-cUnY3DufmfhdwBQuvo9pmDsxzxSHtaSRC_4ezr2lsRTOljpJVo81DJYBcnI00Fwk9xTdWQ"
+    logger.debug "response: #{response}"
+    subject { response }
+    it { should_not be_nil}
+  end
+  
+  describe "client instance post test with compression" do
+    client = HttpStreamingClient::Client.new(compression: true)
     response = client.post "http://posttestserver.com/post.php", "v=1.0&rsz=large&hl=en&geo=25187&key=ABQIAAAAh-n5SAB-cUnY3DufmfhdwBQuvo9pmDsxzxSHtaSRC_4ezr2lsRTOljpJVo81DJYBcnI00Fwk9xTdWQ"
     logger.debug "response: #{response}"
     subject { response }
