@@ -244,7 +244,7 @@ module HttpStreamingClient
 	  end
 	end
 
-	return partial # returning the last chunk as the return value, handles single chunk chunked responses (thanks, google) without a block handler
+	return partial # returning the last chunk as the return value, handles single chunk chunked responses without a block handler
 
       else
 	# Not chunked transfer encoding, but potentially gzip'd, and potentially streaming with content-length = 0
