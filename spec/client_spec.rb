@@ -39,6 +39,14 @@ describe HttpStreamingClient do
   
   describe "client instance post test" do
     client = HttpStreamingClient::Client.new
+    response = client.post "http://posttestserver.com/post.php", "v=1.0&rsz=large&hl=en&geo=25187&key=ABQIAAAAh-n5SAB-cUnY3DufmfhdwBQuvo9pmDsxzxSHtaSRC_4ezr2lsRTOljpJVo81DJYBcnI00Fwk9xTdWQ"
+    logger.debug "response: #{response}"
+    subject { response }
+    it { should_not be_nil}
+  end
+  
+  describe "client instance post test with hash" do
+    client = HttpStreamingClient::Client.new
     params = Hash.new
     params['v'] = "1.0"
     params['rsz'] = "large"
