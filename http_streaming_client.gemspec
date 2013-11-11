@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://git.corp.adobe.com/tompkins/http_streaming_client"
   spec.license       = "Apache 2.0"
 
-  spec.files         = `git ls-files`.split($/)
+  spec.files         = `git ls-files`.split($/) - %w(lib/http_streaming_client/credentials/adobe.rb lib/http_streaming_client/credentials/twitter.rb)
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
@@ -25,6 +25,4 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "coveralls"
 
   spec.add_runtime_dependency "json"
-  spec.add_runtime_dependency "typhoeus"
-  spec.add_runtime_dependency "nokogiri"
 end
