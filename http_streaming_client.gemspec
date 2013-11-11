@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["tompkins@adobe.com"]
   spec.description   = %q{Ruby HTTP client with streaming support for GZIP compressed streams and chunked transfer encoding. Also includes extensible OAuth support for Adobe and Twitter streaming APIs.}
   spec.summary       = %q{a streaming HTTP protocol client}
-  spec.homepage      = "https://git.corp.adobe.com/tompkins/http_streaming_client"
+  spec.homepage      = "https://github.com/adobe-research/http_streaming_client"
   spec.license       = "Apache 2.0"
 
   spec.files         = `git ls-files`.split($/) - %w(lib/http_streaming_client/credentials/adobe.rb lib/http_streaming_client/credentials/twitter.rb)
@@ -25,4 +25,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "coveralls"
 
   spec.add_runtime_dependency "json"
+  spec.add_runtime_dependency "zlib"
 end
