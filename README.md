@@ -29,7 +29,7 @@ And then execute:
 
     $ bundle install
 
-## Installation (rubyforge -- pending)
+## Installation (via rubygems.org)
 
 Add this line to your application's Gemfile:
 
