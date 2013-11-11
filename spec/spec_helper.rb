@@ -2,11 +2,12 @@ require 'bundler/setup'
 require 'logger'
 
 require 'coveralls'
-Coveralls.wear!
+Coveralls.wear! if ENV["COVERALLS"]
 
 require 'simplecov'
 SimpleCov.start do
   add_filter "/spec/"
+  add_filter "/lib/http_streaming_client/credentials/"
 end
 
 require 'http_streaming_client'
