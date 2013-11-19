@@ -70,7 +70,7 @@ describe HttpStreamingClient do
       expect {
 	client = HttpStreamingClient::Client.new(compression: false)
 	begin
-	  status = Timeout::timeout(TIMEOUT_SEC) {
+	  status = Timeout::timeout(5) {
 	    response = client.get(STREAMURL, {:headers => {'Authorization' => "Bearer #{authorization}" }})
 	  }
 	rescue Timeout::Error
