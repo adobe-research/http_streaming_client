@@ -212,7 +212,7 @@ module HttpStreamingClient
 	while !socket.eof? && (line = socket.gets)
 	  chunkLeft = 0
 
-	  if line.match /^0*?\r\n/ then
+	  if line.match /^0\r\n/ then
 	    logger.debug "received zero length chunk, chunked encoding EOF"
 	    break
 	  end
