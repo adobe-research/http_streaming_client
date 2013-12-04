@@ -91,13 +91,18 @@ module HttpStreamingClient
 	end
 
 	# called by GzipReader
-	def read(length=nil, buffer=nil)
+	def readpartial(length=nil, buffer=nil)
 	  logger.debug "GZipBufferIO:read:packet_stream:#{@packet_stream.nil? ? 'nil' : 'not nil'}"
 	  buffer ||= ""
 	  length ||= 0
 	  buffer << @packet_stream[0..(length-1)]
 	  @packet_stream = @packet_stream[length..-1]
 	  buffer
+	end
+	
+	# called by GzipReader
+	def read(length=nil, buffer=nil)
+	  readpartial(length, buffer)
 	end
 
 	# called by GzipReader
