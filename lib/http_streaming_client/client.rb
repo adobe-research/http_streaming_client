@@ -214,6 +214,7 @@ module HttpStreamingClient
 
 	  if line.match /^0\r\n/ then
 	    logger.debug "received zero length chunk, chunked encoding EOF"
+	    logger.debug "EOF line: #{line}"
 	    break
 	  end
 
