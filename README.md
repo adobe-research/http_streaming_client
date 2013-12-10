@@ -43,10 +43,6 @@ Or install it yourself as:
 
     $ gem install http_streaming_client
 
-## Version
-
-Current release version: 0.8.1 (see <a href="https://github.com/adobe-research/http_streaming_client/releases">RELEASES</a>)
-
 ## Logging
 
 HTTP protocol trace logging is available as :debug level logging. The gem supports configurable logging to both STDOUT and a log file, and includes a Railtie to use Rails.logger when the gem is included in a Rails application.
