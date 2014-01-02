@@ -44,10 +44,41 @@ module HttpStreamingClient
 	@packet_callback = packet_callback
       end
 
+      def nonblock_readline(io)
+	@line_buffer ||= ""
+	ch = nil
+	begin
+	  while ch = io.getc
+	    @line_buffer += ch
+	    if ch == "\n" then
+	      result = @line_buffer
+	      @line_buffer = ""
+	      return result
+	    end
+	  end
+	rescue Zlib::GzipFile::Error
+	  # this is raised on EOF by ZLib, return nil to indicate EOF and leave partial line in the buffer
+	  return nil
+	end
+      end
+
       def <<(compressed_packet)
 	return unless compressed_packet && compressed_packet.size > 0
-	decompressed_packet = decompress(compressed_packet)
-	process_decompressed_packet(decompressed_packet)
+	@buf ||= GZipBufferIO.new
+	@buf << compressed_packet
+
+	# pass at least 2k bytes to GzipReader to avoid zlib EOF
+	if @buf.size > 2048 then
+
+	  @gzip ||= Zlib::GzipReader.new @buf
+
+	  while true do
+	    decompressed_packet = nonblock_readline(@gzip)
+	    #logger.debug "decompressed_packet:#{decompressed_packet}"
+	    break if decompressed_packet.nil?
+	    process_decompressed_packet(decompressed_packet)
+	  end
+	end
       end
 
       def close
@@ -55,25 +86,24 @@ module HttpStreamingClient
 	decompressed_packet = ""
 	begin
 	  @gzip ||= Zlib::GzipReader.new @buf
-	  decompressed_packet = @gzip.readline
+
+	  while true do
+	    decompressed_packet = nonblock_readline(@gzip)
+	    #logger.debug "decompressed_packet:#{decompressed_packet}"
+	    break if decompressed_packet.nil?
+	    process_decompressed_packet(decompressed_packet)
+	  end
+
 	rescue Zlib::Error
 	  raise DecoderError
 	end
-	process_decompressed_packet(decompressed_packet)
+      end
+
+      def size
+	@buf.size
       end
 
       protected
-
-      def decompress(compressed_packet)
-	@buf ||= GZipBufferIO.new
-	@buf << compressed_packet
-
-	# pass at least 2k bytes to GzipReader to avoid zlib EOF
-	if @buf.size > 2048
-	  @gzip ||= Zlib::GzipReader.new @buf
-	  @gzip.readline
-	end
-      end
 
       class GZipBufferIO
 
@@ -92,21 +122,38 @@ module HttpStreamingClient
 
 	# called by GzipReader
 	def readpartial(length=nil, buffer=nil)
-	  logger.debug "GZipBufferIO:read:packet_stream:#{@packet_stream.nil? ? 'nil' : 'not nil'}"
+	  logger.debug "GZipBufferIO:readpartial:length:#{length}:@packet_stream:#{@packet_stream.nil? ? 'nil' : 'not null'}"
 	  buffer ||= ""
-	  length ||= 0
+
+	  raise EOFError "" if @packet_stream.size == 0
+
+	  length ||= @packet_stream.size # read all if a fraction is specified
+	  length = [ length, @packet_stream.size ].min # read length or @packet_stream.size, whichever is smaller
+
+	  #logger.debug "GZipBufferIO:readpartial:before:psize:#{@packet_stream.size}:bsize:#{buffer.size}:length:#{length}"
+
 	  buffer << @packet_stream[0..(length-1)]
-	  @packet_stream = @packet_stream[length..-1]
+
+	  if length == @packet_stream.size then
+	    @packet_stream = ""
+	  else
+	    @packet_stream = @packet_stream[length..-1]
+	  end
+
+	  #logger.debug "GZipBufferIO:readpartial:after:psize:#{@packet_stream.size}:bsize:#{buffer.size}"
 	  buffer
 	end
-	
+
 	# called by GzipReader
 	def read(length=nil, buffer=nil)
+	  logger.debug "read:length:#{length}"
+	  return nil if @packet_stream.size == 0
 	  readpartial(length, buffer)
 	end
 
 	# called by GzipReader
 	def size
+	  logger.debug "size():#{@packet_stream.size}"
 	  @packet_stream.size
 	end
       end
@@ -116,7 +163,7 @@ module HttpStreamingClient
       def process_decompressed_packet(decompressed_packet)
 	logger.debug "GZipBufferIO:process_decompressed_packet:size:#{decompressed_packet.nil? ? "nil" : decompressed_packet.size}"
 	if decompressed_packet && decompressed_packet.size > 0
-	  @packet_callback.call(decompressed_packet)
+	  @packet_callback.call(decompressed_packet) unless @packet_callback.nil?
 	end
       end
 

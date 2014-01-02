@@ -200,11 +200,11 @@ module HttpStreamingClient
 	  logger.debug "response compression detected"
 	  if block_given? then
 	    decoder = HttpStreamingClient::Decoders::GZip.new { |line|
-	      logger.debug "read #{line.size} uncompressed bytes"
+	      logger.debug "read #{line.size} uncompressed bytes, decoder queue bytes:#{decoder.size}"
 	      block.call(line) unless @interrupted }
 	  else
 	    decoder = HttpStreamingClient::Decoders::GZip.new { |line|
-	      logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total"
+	      logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total, decoder queue bytes:#{decoder.size}"
 	      response << line unless @interrupted }
 	  end
 	end
@@ -274,11 +274,11 @@ module HttpStreamingClient
 
 	  if block_given? then
 	    decoder = HttpStreamingClient::Decoders::GZip.new { |line|
-	      logger.debug "read #{line.size} uncompressed bytes"
+	      logger.debug "read #{line.size} uncompressed bytes, decoder queue bytes:#{decoder.size}"
 	      block.call(line) unless @interrupted }
 	  else
 	    decoder = HttpStreamingClient::Decoders::GZip.new { |line|
-	      logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total"
+	      logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total, decoder queue bytes:#{decoder.size}"
 	      response << line unless @interrupted }
 	  end
 
