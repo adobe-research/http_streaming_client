@@ -30,6 +30,8 @@
 module HttpStreamingClient
 
   class InvalidContentType < Exception; end
+  
+  class InvalidRedirect < Exception; end
 
   class HttpTimeOut < StandardError; end
 

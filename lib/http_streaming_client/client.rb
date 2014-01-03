@@ -97,6 +97,7 @@ module HttpStreamingClient
     end
 
     def request(method, uri, opts = {}, &block)
+
       logger.debug("Client::request:#{method}:#{uri}:#{opts}")
 
       if uri.is_a?(String)
@@ -165,6 +166,15 @@ module HttpStreamingClient
       end
 
       logger.debug "response headers:#{response_head[:headers]}"
+
+      if response_head[:code] == 301 then
+	location = response_head[:headers]["Location"]
+	raise InvalidRedirect, "Unable to find Location header for HTTP 301 response" if location.nil?
+	logger.debug "Received HTTP 301 redirect to #{location}, following..."
+	socket.close if !socket.nil? and !socket.closed?
+	opts.delete(:socket)
+	return request(method, location, opts, &block)
+      end
 
       content_length = response_head[:headers]["Content-Length"].to_i
       logger.debug "content-length: #{content_length}"
@@ -237,7 +247,7 @@ module HttpStreamingClient
 	  return if @interrupted
 
 	  if response_compression then
-	      decoder << partial
+	    decoder << partial
 	  else
 	    if block_given? then
 	      yield partial

@@ -9,9 +9,17 @@ describe HttpStreamingClient do
     it { should_not be_nil}
   end
 
-  describe "client instance get test" do
+  describe "client instance get test, no chunked transfer encosing and GZIP compression" do
     client = HttpStreamingClient::Client.new
-    response = client.get "http://www.google.com/"
+    response = client.get "http://screamradius.com/"
+    logger.debug "response: #{response}"
+    subject { response }
+    it { should_not be_nil}
+  end
+
+  describe "client instance get test, test 301 redirect" do
+    client = HttpStreamingClient::Client.new(compression: true)
+    response = client.get("https://www.ebay.com/")
     logger.debug "response: #{response}"
     subject { response }
     it { should_not be_nil}
