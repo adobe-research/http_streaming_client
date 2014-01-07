@@ -1,3 +1,11 @@
+http_streaming_client 0.8.8 (1.7.2014)
+========================================
+* Fixed Issue #1, memory leak due to accumulated messages within the buffer pipeline
+* Added automatic reconnection support and configuration options
+* Added automatic HTTP 301 redirect support
+* Added new unit tests for reconnect and for memory leak detection
+* Updated performance tests
+
 http_streaming_client 0.8.5 (12.10.2013)
 ========================================
 * Updates to support MRI ruby 2.0.0-p353

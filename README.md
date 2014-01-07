@@ -59,6 +59,15 @@ And to set the log level, specify the following in your code (e.g. to set the lo
 
     HttpStreamingClient.logger.level = Logger::DEBUG
 
+## Client configuration options
+
+The following options are supported as hash option parameters for HttpStreamingClient::Client.new:
+
+    compression: true/false (default: true)
+    reconnect: true/false (default: false)
+    reconnect_interval: interval_seconds (default: 1 second)
+    reconnect_attempts: num_attempts (default: 10)
+
 ## Streaming Service Credentials
 
 The command line tools for the Adobe Analytics Firehose and Twitter's Streaming APIs require valid Adobe and Twitter credentials. Unit tests execute against the Twitter sample firehose and the Adobe Analytics Firehose and also require valid service credentials.
@@ -122,7 +131,6 @@ Take a look at
 
 ## TODO
 
-* connection management with reconnect functions
 * load/memory testing
 
 ## Fixed Issues
