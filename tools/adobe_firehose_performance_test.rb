@@ -15,8 +15,8 @@ authorization = HttpStreamingClient::Oauth::Adobe.generate_authorization(url, US
 puts "#{TOKENAPIHOST}:access token: #{authorization}"
 client = HttpStreamingClient::Client.new(compression: false)
 
-NUM_RECORDS_PER_BATCH = 1000
-MAX_RECORDS = 50000
+NUM_RECORDS_PER_BATCH = 5000
+MAX_RECORDS = 3600000
 
 count = 0
 totalSize = 0
@@ -25,6 +25,7 @@ startTime = nil
 lastTime = nil
 
 puts "starting performance test run: #{Time.new.to_s}"
+puts "stream: #{STREAMURL}"
 
 startTime = lastTime = Time.new 
 
@@ -69,6 +70,7 @@ response = client.get(STREAMURL, {:headers => {'Authorization' => "Bearer #{auth
     stats['interval_kbytes_per_sec'] = (intervalSize / intervalElapsedTime / 1024).round(2).to_s
 
     puts stats.to_json
+    STDOUT.flush
 
     lastTime = now
     intervalSize = 0

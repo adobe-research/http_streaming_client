@@ -24,6 +24,7 @@ startTime = nil
 lastTime = nil
 
 puts "starting performance test run: #{Time.new.to_s}"
+puts "stream: #{url}"
 
 startTime = lastTime = Time.new 
 
@@ -64,6 +65,7 @@ response = client.get(url, {:headers => {'Authorization' => "#{authorization}" }
     stats['interval_kbytes_per_sec'] = (intervalSize / intervalElapsedTime / 1024).round(2).to_s
 
     puts stats.to_json
+    STDOUT.flush
     
     lastTime = now
     intervalSize = 0
