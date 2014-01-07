@@ -63,9 +63,16 @@ And to set the log level, specify the following in your code (e.g. to set the lo
 
 The following options are supported as hash option parameters for HttpStreamingClient::Client.new:
 
+GZip compression
     compression: true/false (default: true)
+
+Automatic Socket Reconnect Functions
     reconnect: true/false (default: false)
+
+Reconnect Interval
     reconnect_interval: interval_seconds (default: 1 second)
+
+Maximum Reconnect Attempts
     reconnect_attempts: num_attempts (default: 10)
 
 ## Streaming Service Credentials
