@@ -59,11 +59,11 @@ And to set the log level, specify the following in your code (e.g. to set the lo
 
     HttpStreamingClient.logger.level = Logger::DEBUG
 
-## Client configuration options
+## Client Configuration Options
 
 The following options are supported as hash option parameters for HttpStreamingClient::Client.new:
 
-GZip compression
+GZip Compression
 
     compression: true/false (default: true)
 
