@@ -278,6 +278,7 @@ module HttpStreamingClient
 	      else
 		logger.debug "no block specified, returning chunk results and halting streaming response"
 		response << partial
+		interrupt
 	      end
 	    end
 	  end
@@ -350,10 +351,11 @@ module HttpStreamingClient
 	end
       rescue => e
 	return if @interrupted
-	logger.debug "Rescue: #{e}" unless e.instance_of? ReconnectRequest
+	logger.debug "Error Detected: #{e}" unless e.instance_of? ReconnectRequest
 	decoder.close if !decoder.nil?
 	socket.close if !socket.nil? and !socket.closed?
 	opts.delete(:socket)
+
 	if @reconnect_requested then
 	  logger.info "Connection closed. Reconnect requested. Trying..."
 	  @reconnect_count = @reconnect_count + 1
@@ -361,6 +363,8 @@ module HttpStreamingClient
 	  retry if @reconnect_count < @reconnect_attempts
 	  logger.info "Maximum number of failed reconnect attempts reached (#{@reconnect_attempts}). Exiting."
 	end
+	
+	raise e unless e.instance_of? ReconnectRequest
       end
     ensure
       logger.debug "ensure socket closed"
