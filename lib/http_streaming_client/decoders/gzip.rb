@@ -105,7 +105,7 @@ module HttpStreamingClient
 
       protected
 
-      class GZipBufferIO
+      class GZipBufferIO < IO
 
 	def logger
 	  HttpStreamingClient.logger
