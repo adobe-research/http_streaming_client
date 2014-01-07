@@ -21,6 +21,8 @@ RSpec.configure do |config|
   HttpStreamingClient.logger.level = Logger::DEBUG
   HttpStreamingClient.logger.logfile = true
 
+  config.filter_run_excluding disabled: true
+
 end
 
 def logger

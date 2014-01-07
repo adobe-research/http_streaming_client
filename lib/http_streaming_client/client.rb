@@ -40,9 +40,12 @@ module HttpStreamingClient
 
   class Client
 
-    attr_accessor :socket, :interrupted, :compression_requested
+    attr_accessor :socket, :interrupted, :compression_requested, :reconnect_requested, :reconnect_attempts, :reconnect_interval
 
     ALLOWED_MIME_TYPES = ["application/json", "text/plain", "text/html"]
+
+    MAX_RECONNECT_ATTEMPTS = 10
+    RECONNECT_INTERVAL_SEC = 1
 
     def self.logger
       HttpStreamingClient.logger
@@ -56,8 +59,24 @@ module HttpStreamingClient
       logger.debug("Client.new: #{opts}")
       @socket = nil
       @interrupted = false
+
       @compression_requested = opts[:compression].nil? ? true : opts[:compression]
       logger.debug("compression is #{@compression_requested}")
+
+      @reconnect_requested = opts[:reconnect].nil? ? false : opts[:reconnect]
+      logger.debug("reconnect is #{@reconnect_requested}")
+
+      if @reconnect_requested then
+	@reconnect_count = 0
+
+	@reconnect_attempts = opts[:reconnect_attempts].nil? ? MAX_RECONNECT_ATTEMPTS : opts[:reconnect_attempts]
+	logger.debug("reconnect_attempts is #{@reconnect_attempts}")
+
+	@reconnect_interval = opts[:reconnect_interval].nil? ? RECONNECT_INTERVAL_SEC : opts[:reconnect_interval]
+	logger.debug("reconnect_interval is #{@reconnect_interval}")
+
+      end
+
     end
 
     def self.get(uri, opts = {}, &block)
@@ -132,199 +151,222 @@ module HttpStreamingClient
       headers = default_headers.merge(opts[:headers] || {})
       logger.debug "request headers: #{headers}"
 
-      socket = initialize_socket(uri, opts)
-      request = "#{method} #{uri.path}#{uri.query ? "?"+uri.query : nil} HTTP/1.1\r\n"
-      request << "Host: #{uri.host}\r\n"
-      headers.each do |k, v|
-	request << "#{k}: #{v}\r\n"
-      end
-      request << "\r\n"
-      if method == "POST"
-	request << body
-      end
+      begin
 
-      socket.write(request)
+	socket = initialize_socket(uri, opts)
 
-      response_head = {}
-      response_head[:headers] = {}
+	@reconnect_count = 0 if @reconnect_requested
 
-      socket.each_line do |line|
-	if line == "\r\n" then
-	  break
-	else
-	  header = line.split(": ")
-	  if header.size == 1
-	    header = header[0].split(" ")
-	    response_head[:version] = header[0]
-	    response_head[:code] = header[1].to_i
-	    response_head[:msg] = header[2]
-	    logger.debug "HTTP response code is #{response_head[:code]}"
-	  else
-	    response_head[:headers][camelize_header_name(header[0])] = header[1].strip
-	  end
+	request = "#{method} #{uri.path}#{uri.query ? "?"+uri.query : nil} HTTP/1.1\r\n"
+	request << "Host: #{uri.host}\r\n"
+	headers.each do |k, v|
+	  request << "#{k}: #{v}\r\n"
 	end
-      end
-
-      logger.debug "response headers:#{response_head[:headers]}"
-
-      if response_head[:code] == 301 then
-	location = response_head[:headers]["Location"]
-	raise InvalidRedirect, "Unable to find Location header for HTTP 301 response" if location.nil?
-	logger.debug "Received HTTP 301 redirect to #{location}, following..."
-	socket.close if !socket.nil? and !socket.closed?
-	opts.delete(:socket)
-	return request(method, location, opts, &block)
-      end
-
-      content_length = response_head[:headers]["Content-Length"].to_i
-      logger.debug "content-length: #{content_length}"
-
-      content_type = response_head[:headers]["Content-Type"].split(';').first
-      logger.debug "content-type: #{content_type}"
-
-      response_compression = false
-
-      if ALLOWED_MIME_TYPES.include?(content_type)
-	case response_head[:headers]["Content-Encoding"]
-	when "gzip"
-	  response_compression = true
-	end
-      else
-	raise InvalidContentType, "invalid response MIME type: #{content_type}"
-      end
-
-      if (response_head[:code] != 200)
-	s = "Received HTTP #{response_head[:code]} response"
-	logger.debug "request: #{request}"
-	response = socket.read(content_length)
-	logger.debug "response: #{response}"
-	raise HttpError.new(response_head[:code], "Received HTTP #{response_head[:code]} response", response_head[:headers])
-      end
-
-      if response_head[:headers]["Transfer-Encoding"] == 'chunked'
-	partial = nil
-	decoder = nil
-	response = ""
-
-	if response_compression then
-	  logger.debug "response compression detected"
-	  if block_given? then
-	    decoder = HttpStreamingClient::Decoders::GZip.new { |line|
-	      logger.debug "read #{line.size} uncompressed bytes, decoder queue bytes:#{decoder.size}"
-	      block.call(line) unless @interrupted }
-	  else
-	    decoder = HttpStreamingClient::Decoders::GZip.new { |line|
-	      logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total, decoder queue bytes:#{decoder.size}"
-	      response << line unless @interrupted }
-	  end
+	request << "\r\n"
+	if method == "POST"
+	  request << body
 	end
 
-	while !socket.eof? && (line = socket.gets)
-	  chunkLeft = 0
+	socket.write(request)
 
-	  if line.match /^0\r\n/ then
-	    logger.debug "received zero length chunk, chunked encoding EOF"
-	    logger.debug "EOF line: #{line}"
+	response_head = {}
+	response_head[:headers] = {}
+
+	socket.each_line do |line|
+	  if line == "\r\n" then
 	    break
+	  else
+	    header = line.split(": ")
+	    if header.size == 1
+	      header = header[0].split(" ")
+	      response_head[:version] = header[0]
+	      response_head[:code] = header[1].to_i
+	      response_head[:msg] = header[2]
+	      logger.debug "HTTP response code is #{response_head[:code]}"
+	    else
+	      response_head[:headers][camelize_header_name(header[0])] = header[1].strip
+	    end
 	  end
+	end
 
-	  next if line == "\r\n"
+	logger.debug "response headers:#{response_head[:headers]}"
 
-	  size = line.hex
-	  logger.debug "chunk size:#{size}"
+	if response_head[:code] == 301 then
+	  location = response_head[:headers]["Location"]
+	  raise InvalidRedirect, "Unable to find Location header for HTTP 301 response" if location.nil?
+	  logger.debug "Received HTTP 301 redirect to #{location}, following..."
+	  socket.close if !socket.nil? and !socket.closed?
+	  opts.delete(:socket)
+	  return request(method, location, opts, &block)
+	end
 
-	  partial = socket.read(size)
-	  next if partial.nil?
+	content_length = response_head[:headers]["Content-Length"].to_i
+	logger.debug "content-length: #{content_length}"
 
-	  remaining = size-partial.size
-	  logger.debug "read #{partial.size} bytes, #{remaining} bytes remaining"
-	  until remaining == 0
-	    partial << socket.read(remaining)
-	    remaining = size-partial.size
-	    logger.debug "read #{partial.size} bytes, #{remaining} bytes remaining"
+	content_type = response_head[:headers]["Content-Type"].split(';').first
+	logger.debug "content-type: #{content_type}"
+
+	response_compression = false
+
+	if ALLOWED_MIME_TYPES.include?(content_type)
+	  case response_head[:headers]["Content-Encoding"]
+	  when "gzip"
+	    response_compression = true
 	  end
+	else
+	  raise InvalidContentType, "invalid response MIME type: #{content_type}"
+	end
 
-	  return if @interrupted
+	if (response_head[:code] != 200)
+	  s = "Received HTTP #{response_head[:code]} response"
+	  logger.debug "request: #{request}"
+	  response = socket.read(content_length)
+	  logger.debug "response: #{response}"
+	  raise HttpError.new(response_head[:code], "Received HTTP #{response_head[:code]} response", response_head[:headers])
+	end
+
+	if response_head[:headers]["Transfer-Encoding"] == 'chunked'
+	  partial = nil
+	  decoder = nil
+	  response = ""
 
 	  if response_compression then
-	    decoder << partial
-	  else
+	    logger.debug "response compression detected"
 	    if block_given? then
-	      yield partial
+	      decoder = HttpStreamingClient::Decoders::GZip.new { |line|
+		logger.debug "read #{line.size} uncompressed bytes, decoder queue bytes:#{decoder.size}"
+		block.call(line) unless @interrupted }
 	    else
-	      logger.debug "no block specified, returning chunk results and halting streaming response"
-	      response << partial
+	      decoder = HttpStreamingClient::Decoders::GZip.new { |line|
+		logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total, decoder queue bytes:#{decoder.size}"
+		response << line unless @interrupted }
 	    end
 	  end
-	end
 
-	return response
+	  while !socket.eof? && (line = socket.gets)
+	    chunkLeft = 0
 
-      else
-	# Not chunked transfer encoding, but potentially gzip'd, and potentially streaming with content-length = 0
+	    if line.match /^0\r\n/ then
+	      logger.debug "received zero length chunk, chunked encoding EOF"
+	      logger.debug "EOF line: #{line}"
+	      break
+	    end
 
-	if content_length > 0 then
-	  bits = socket.read(content_length)
-	  logger.debug "read #{content_length} bytes"
-	  return bits if !response_compression
-	  logger.debug "response compression detected"
-	  begin
-	    decoder = Zlib::GzipReader.new(StringIO.new(bits))
-	    return decoder.read
-	  rescue Zlib::Error
-	    raise DecoderError
+	    next if line == "\r\n"
+
+	    size = line.hex
+	    logger.debug "chunk size:#{size}"
+
+	    partial = socket.read(size)
+	    next if partial.nil?
+
+	    remaining = size-partial.size
+	    logger.debug "read #{partial.size} bytes, #{remaining} bytes remaining"
+	    until remaining == 0
+	      partial << socket.read(remaining)
+	      remaining = size-partial.size
+	      logger.debug "read #{partial.size} bytes, #{remaining} bytes remaining"
+	    end
+
+	    return if @interrupted
+
+	    if response_compression then
+	      decoder << partial
+	    else
+	      if block_given? then
+		yield partial
+	      else
+		logger.debug "no block specified, returning chunk results and halting streaming response"
+		response << partial
+	      end
+	    end
 	  end
-	end
 
-	if response_compression then
-
-	  logger.debug "response compression detected"
-	  decoder = nil
-	  response = ""
-
-	  if block_given? then
-	    decoder = HttpStreamingClient::Decoders::GZip.new { |line|
-	      logger.debug "read #{line.size} uncompressed bytes, decoder queue bytes:#{decoder.size}"
-	      block.call(line) unless @interrupted }
-	  else
-	    decoder = HttpStreamingClient::Decoders::GZip.new { |line|
-	      logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total, decoder queue bytes:#{decoder.size}"
-	      response << line unless @interrupted }
-	  end
-
-	  while (!socket.eof? and !(line = socket.read_nonblock(2048)).nil?)
-	    logger.debug "read compressed line, #{line.size} bytes"
-	    decoder << line
-	    break response if @interrupted
-	  end
-	  logger.debug "EOF detected"
-	  decoder = nil
-
+	  logger.debug "socket EOF detected" if socket.eof?
+	  raise ReconnectRequest if @reconnect_requested
 	  return response
 
 	else
+	  # Not chunked transfer encoding, but potentially gzip'd, and potentially streaming with content-length = 0
 
-	  response = ""
-
-	  while (!socket.eof? and !(line = socket.readline).nil?)
-	    if block_given? then
-	      yield line
-	      logger.debug "read #{line.size} bytes"
-	    else
-	      logger.debug "read #{line.size} bytes, #{response.size} bytes total"
-	      response << line
+	  if content_length > 0 then
+	    bits = socket.read(content_length)
+	    logger.debug "read #{content_length} bytes"
+	    return bits if !response_compression
+	    logger.debug "response compression detected"
+	    begin
+	      decoder = Zlib::GzipReader.new(StringIO.new(bits))
+	      return decoder.read
+	    rescue Zlib::Error
+	      raise DecoderError
 	    end
-	    break if @interrupted
 	  end
 
-	  return response
+	  if response_compression then
 
+	    logger.debug "response compression detected"
+	    decoder = nil
+	    response = ""
+
+	    if block_given? then
+	      decoder = HttpStreamingClient::Decoders::GZip.new { |line|
+		logger.debug "read #{line.size} uncompressed bytes, decoder queue bytes:#{decoder.size}"
+		block.call(line) unless @interrupted }
+	    else
+	      decoder = HttpStreamingClient::Decoders::GZip.new { |line|
+		logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total, decoder queue bytes:#{decoder.size}"
+		response << line unless @interrupted }
+	    end
+
+	    while (!socket.eof? and !(line = socket.read_nonblock(2048)).nil?)
+	      logger.debug "read compressed line, #{line.size} bytes"
+	      decoder << line
+	      break response if @interrupted
+	    end
+
+	    logger.debug "EOF detected"
+	    raise ReconnectRequest if @reconnect_requested
+	    return response
+
+	  else
+
+	    response = ""
+
+	    while (!socket.eof? and !(line = socket.readline).nil?)
+	      if block_given? then
+		yield line
+		logger.debug "read #{line.size} bytes"
+	      else
+		logger.debug "read #{line.size} bytes, #{response.size} bytes total"
+		response << line
+	      end
+	      break if @interrupted
+	    end
+
+	    raise ReconnectRequest if @reconnect_requested
+	    return response
+
+	  end
+	end
+      rescue => e
+	return if @interrupted
+	logger.debug "Rescue: #{e}" unless e.instance_of? ReconnectRequest
+	decoder.close if !decoder.nil?
+	socket.close if !socket.nil? and !socket.closed?
+	opts.delete(:socket)
+	if @reconnect_requested then
+	  logger.info "Connection closed. Reconnect requested. Trying..."
+	  @reconnect_count = @reconnect_count + 1
+	  sleep @reconnect_interval
+	  retry if @reconnect_count < @reconnect_attempts
+	  logger.info "Maximum number of failed reconnect attempts reached (#{@reconnect_attempts}). Exiting."
 	end
       end
     ensure
       logger.debug "ensure socket closed"
       decoder.close if !decoder.nil?
       socket.close if !socket.nil? and !socket.closed?
+      opts.delete(:socket)
     end
 
     private
@@ -340,6 +382,8 @@ module HttpStreamingClient
 	uri = URI.parse(uri)
       end
 
+      logger.debug "Connecting to #{uri.host}:#{uri.port}..."
+
       @socket = TCPSocket.new(uri.host, uri.port)
 
       if uri.scheme.eql? "https"
@@ -351,6 +395,7 @@ module HttpStreamingClient
 	end
       end
 
+      logger.debug "Connected to #{uri.host}:#{uri.port}"
       opts.merge!({:socket => @socket})
       @interrupted = false
       return opts[:socket]
