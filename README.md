@@ -9,27 +9,7 @@ Ruby HTTP client with support for HTTP 1.1 streaming, GZIP and zlib compressed s
 
 MRI ruby-2.0.0-p353. If you need it, install via rvm: https://rvm.io/
 
-## Installation (local gem bundle/install)
-
-Execute the following to bundle the gem:
-
-    $ gem build http_streaming_client.gemspec
-
-Then install the gem with:
-
-    $ gem install http_streaming_client
-
-## Installation (via Github)
-
-Add this line to your application's Gemfile:
-
-    gem 'http_streaming_client', :git => 'git@github.com:adobe-research/http_streaming_client.git'
-
-And then execute:
-
-    $ bundle install
-
-## Installation (via rubygems.org)
+## Installation
 
 Add this line to your application's Gemfile:
 
@@ -37,27 +17,39 @@ Add this line to your application's Gemfile:
 
 And then execute:
 
-    $ bundle
+    $ bundle install
 
-Or install it yourself as:
+Or install it directly via gem with:
 
     $ gem install http_streaming_client
 
-## Logging
+## Simple Example
 
-HTTP protocol trace logging is available as :debug level logging. The gem supports configurable logging to both STDOUT and a log file, and includes a Railtie to use Rails.logger when the gem is included in a Rails application.
+```ruby
+require 'http_streaming_client'
 
-To configure gem logging to STDOUT, specify the following in your code:
+twitter_stream_url = "https://stream.twitter.com/1.1/statuses/sample.json"
 
-    HttpStreamingClient.logger.console = true
+# Generate the HMAC-SHA1 twitter authorization header
+authorization = HttpStreamingClient::Oauth::Twitter.generate_authorization(twitter_stream_url, "get", {}, OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET, OAUTH_TOKEN, OAUTH_TOKEN_SECRET)
 
-To configure gem logging to a log file named "test.log", specify the following in your code:
+# Configure the client
+client = HttpStreamingClient::Client.new(compression: true, reconnect: true, reconnect_interval: 10, reconnect_attempts: 60)
 
-    HttpStreamingClient.logger.logfile = true
+# Open the connection and start processing messages
+response = client.get(twitter_stream_url, {:headers => {'Authorization' => "#{authorization}" }}) { |line|
+  logger.info "Received a line that we could parse into JSON if we want: #{line}"
+  client.interrupt if we_want_to_stop_receiving_messages?
+}
+```
 
-And to set the log level, specify the following in your code (e.g. to set the log level to :debug):
+For more examples, take a look at
 
-    HttpStreamingClient.logger.level = Logger::DEBUG
+* spec/client_spec.rb
+* tools/adobe_firehose.rb
+* tools/adobe_firehose_performance_test.rb
+* tools/twitter_firehose.rb
+* tools/twitter_firehose_performance_test.rb
 
 ## Client Configuration Options
 
@@ -78,6 +70,22 @@ Reconnect Interval
 Maximum Reconnect Attempts
 
     reconnect_attempts: num_attempts (default: 10)
+
+## Logging
+
+HTTP protocol trace logging is available as :debug level logging. The gem supports configurable logging to both STDOUT and a log file, and includes a Railtie to use Rails.logger when the gem is included in a Rails application.
+
+To configure gem logging to STDOUT, specify the following in your code:
+
+    HttpStreamingClient.logger.console = true
+
+To configure gem logging to a log file named "test.log", specify the following in your code:
+
+    HttpStreamingClient.logger.logfile = true
+
+And to set the log level, specify the following in your code (e.g. to set the log level to :debug):
+
+    HttpStreamingClient.logger.level = Logger::DEBUG
 
 ## Streaming Service Credentials
 
@@ -129,20 +137,6 @@ Individual test suites in the spec directory can be run via:
     $ rspec spec/<spec filename>.spec
 
 An HTML coverage report is generated at the end of a full test run in the coverage directory.
-
-## Examples
-
-Take a look at
-
-* spec/client_spec.rb
-* tools/adobe_firehose.rb
-* tools/adobe_firehose_performance_test.rb
-* tools/twitter_firehose.rb
-* tools/twitter_firehose_performance_test.rb
-
-## TODO
-
-* load/memory testing
 
 ## Fixed Issues
 
