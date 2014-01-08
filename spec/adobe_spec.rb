@@ -39,7 +39,7 @@ describe HttpStreamingClient do
 
 	    line_count = line_count + 1
 
-	    if line.eql? "\r\n" then
+	    if line.eql? "\r\n" or line.eql? "\r\n\r\n" then
 	      logger.debug "Server ping received"
 	    else
 	      logger.debug "#{JSON.parse(line).to_s}"
@@ -111,7 +111,7 @@ describe HttpStreamingClient do
 
 	    line_count = line_count + 1
 
-	    if line.eql? "\r\n" then
+	    if line.eql? "\r\n" or line.eql? "\r\n\r\n" then
 	      logger.debug "Server ping received"
 	    else
 	      logger.debug "#{JSON.parse(line).to_s}"
