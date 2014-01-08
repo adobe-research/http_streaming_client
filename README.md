@@ -25,12 +25,14 @@ Or install it directly via gem with:
 
 ## Simple Example
 
+Twitter Firehose Sample Stream:
+
 ```ruby
 require 'http_streaming_client'
 
 twitter_stream_url = "https://stream.twitter.com/1.1/statuses/sample.json"
 
-# Generate the HMAC-SHA1 twitter authorization header
+# Generate the HMAC-SHA1 Twitter OAuth authorization header
 authorization = HttpStreamingClient::Oauth::Twitter.generate_authorization(twitter_stream_url, "get", {}, OAUTH_CONSUMER_KEY, OAUTH_CONSUMER_SECRET, OAUTH_TOKEN, OAUTH_TOKEN_SECRET)
 
 # Configure the client
