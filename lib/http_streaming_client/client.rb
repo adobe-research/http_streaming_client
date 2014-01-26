@@ -194,7 +194,7 @@ module HttpStreamingClient
 	if response_head[:code] == 301 then
 	  location = response_head[:headers]["Location"]
 	  raise InvalidRedirect, "Unable to find Location header for HTTP 301 response" if location.nil?
-	  logger.debug "Received HTTP 301 redirect to #{location}, following..."
+	  logger.warn "Received HTTP 301 redirect to #{location}, following..."
 	  socket.close if !socket.nil? and !socket.closed?
 	  opts.delete(:socket)
 	  return request(method, location, opts, &block)
@@ -351,7 +351,7 @@ module HttpStreamingClient
 	end
       rescue => e
 	return if @interrupted
-	logger.debug "Error Detected: #{e}" unless e.instance_of? ReconnectRequest
+	logger.error "Error Detected: #{e}" unless e.instance_of? ReconnectRequest
 	decoder.close if !decoder.nil?
 	socket.close if !socket.nil? and !socket.closed?
 	opts.delete(:socket)

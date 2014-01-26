@@ -1,3 +1,7 @@
+http_streaming_client 0.8.9 (1.26.2014)
+========================================
+* A few minor logging warn/debug changes
+
 http_streaming_client 0.8.8 (1.7.2014)
 ========================================
 * Fixed Issue #1, memory leak due to accumulated messages within the buffer pipeline
