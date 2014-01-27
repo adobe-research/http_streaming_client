@@ -268,17 +268,17 @@ module HttpStreamingClient
 	      logger.debug "read #{partial.size} bytes, #{remaining} bytes remaining"
 	    end
 
-	    return if @interrupted
-
 	    if response_compression then
+	      return if @interrupted
 	      decoder << partial
 	    else
 	      if block_given? then
 		yield partial
 	      else
+	        return response if @interrupted
 		logger.debug "no block specified, returning chunk results and halting streaming response"
 		response << partial
-		interrupt
+		return response
 	      end
 	    end
 	  end
