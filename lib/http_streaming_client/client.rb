@@ -222,7 +222,7 @@ module HttpStreamingClient
 	  logger.debug "request: #{request}"
 	  response = socket.read(content_length)
 	  logger.debug "response: #{response}"
-	  raise HttpError.new(response_head[:code], "Received HTTP #{response_head[:code]} response", response_head[:headers])
+	  raise HttpError.new(response_head[:code], "Received HTTP #{response_head[:code]} response", response_head[:headers], response)
 	end
 
 	if response_head[:headers]["Transfer-Encoding"] == 'chunked'

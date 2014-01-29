@@ -135,9 +135,11 @@ module HttpStreamingClient
 	  buffer << @packet_stream[0..(length-1)]
 
 	  if length == @packet_stream.size then
-	    @packet_stream = ""
+	    #@packet_stream = ""
+	    @packet_stream = @packet_stream.slice!(0,length)
 	  else
-	    @packet_stream = @packet_stream[length..-1]
+	    #@packet_stream = @packet_stream[length..-1]
+	    @packet_stream = @packet_stream.slice!(0,length)
 	  end
 
 	  #logger.debug "GZipBufferIO:readpartial:after:psize:#{@packet_stream.size}:bsize:#{buffer.size}"

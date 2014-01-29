@@ -40,13 +40,14 @@ module HttpStreamingClient
 
   class HttpError < StandardError
 
-    attr_reader :status, :message, :headers
+    attr_reader :status, :message, :headers, :response
 
-    def initialize(status, message, headers = nil)
-      super "#{status}:#{message}"
+    def initialize(status, message, headers = nil, response = nil)
+      super "#{status}:#{message}:#{headers}:#{response}"
       @status = status
       @message = message
       @headers = headers
+      @response = response
     end
   end
 

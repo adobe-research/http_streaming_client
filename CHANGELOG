@@ -1,3 +1,11 @@
+http_streaming_client 0.8.11 ()
+========================================
+* Fixed warn logging for non-200 HTTP response codes
+
+http_streaming_client 0.8.10 (1.27.2014)
+========================================
+* bug fix for chunked transfer encoding response with no compression and no block handler
+
 http_streaming_client 0.8.9 (1.26.2014)
 ========================================
 * A few minor logging warn/debug changes
