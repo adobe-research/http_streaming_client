@@ -29,7 +29,6 @@
 
 module HttpStreamingClient
 
-  
   class InvalidContentType < Exception; end
   
   class InvalidRedirect < Exception; end
@@ -37,6 +36,8 @@ module HttpStreamingClient
   class ReconnectRequest < StandardError; end
 
   class HttpTimeOut < StandardError; end
+  
+  class DecoderError < StandardError; end
 
   class HttpError < StandardError
 
