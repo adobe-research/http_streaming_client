@@ -13,7 +13,7 @@ include HttpStreamingClient::Credentials::Adobe
 url = TOKENAPIHOST
 authorization = HttpStreamingClient::Oauth::Adobe.generate_authorization(url, USERNAME, PASSWORD, CLIENTID, CLIENTSECRET)
 puts "#{TOKENAPIHOST}:access token: #{authorization}"
-client = HttpStreamingClient::Client.new(compression: false)
+client = HttpStreamingClient::Client.new(compression: true)
 response = client.get(STREAMURL, {:headers => {'Authorization' => "Bearer #{authorization}" }}) { |line|
 
     if line.nil? then
