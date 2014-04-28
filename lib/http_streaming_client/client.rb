@@ -35,6 +35,7 @@ require "http_streaming_client/version"
 require "http_streaming_client/custom_logger"
 require "http_streaming_client/errors"
 require "http_streaming_client/decoders/gzip"
+require "http_streaming_client/decoders/chunked"
 
 module HttpStreamingClient
 
@@ -231,13 +232,24 @@ module HttpStreamingClient
 	  response = ""
 
 	  if response_compression then
-	    logger.debug "response compression detected"
+	    logger.debug "chunked transfer encoding with compression detected"
 	    if block_given? then
 	      decoder = HttpStreamingClient::Decoders::GZip.new { |line|
 		logger.debug "read #{line.size} uncompressed bytes, decoder queue bytes:#{decoder.size}"
 		block.call(line) unless @interrupted }
 	    else
 	      decoder = HttpStreamingClient::Decoders::GZip.new { |line|
+		logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total, decoder queue bytes:#{decoder.size}"
+		response << line unless @interrupted }
+	    end
+          else
+	    logger.debug "chunked transfer encoding with no compression detected"
+	    if block_given? then
+	      decoder = HttpStreamingClient::Decoders::Chunked.new { |line|
+		logger.debug "read #{line.size} uncompressed bytes, decoder queue bytes:#{decoder.size}"
+		block.call(line) unless @interrupted }
+	    else
+	      decoder = HttpStreamingClient::Decoders::Chunked.new { |line|
 		logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total, decoder queue bytes:#{decoder.size}"
 		response << line unless @interrupted }
 	    end
@@ -268,19 +280,16 @@ module HttpStreamingClient
 	      logger.debug "read #{partial.size} bytes, #{remaining} bytes remaining"
 	    end
 
-	    if response_compression then
-	      return if @interrupted
-	      decoder << partial
+	    decoder << partial
+
+	    if !block_given? then
+              logger.debug "no block specified, returning chunk results and halting streaming response"
+              return response
 	    else
-	      if block_given? then
-		yield partial
-	      else
-	        return response if @interrupted
-		logger.debug "no block specified, returning chunk results and halting streaming response"
-		response << partial
-		return response
-	      end
+	      return if @interrupted and response_compression
+	      return response if @interrupted
 	    end
+
 	  end
 
 	  logger.debug "socket EOF detected" if socket.eof?

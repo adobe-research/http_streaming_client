@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 ###########################################################################
 ##
 ## http_streaming_client
@@ -37,6 +39,14 @@ module HttpStreamingClient
 
     class GZip
 
+      if defined?(JRUBY_VERSION) then
+	# JRuby: pass at least 8k bytes to GzipReader to avoid zlib EOF
+        GZIP_READER_MIN_BUF_SIZE = 8192
+      else
+	# MRI: pass at least 2k bytes to GzipReader to avoid zlib EOF
+        GZIP_READER_MIN_BUF_SIZE = 2048
+      end
+
       def logger
 	HttpStreamingClient.logger
       end
@@ -44,6 +54,47 @@ module HttpStreamingClient
       def initialize(&packet_callback)
 	logger.debug "GZip:initialize"
 	@packet_callback = packet_callback
+      end
+
+      def <<(compressed_packet)
+	return unless compressed_packet && compressed_packet.size > 0
+	@buf ||= GZipBufferIO.new
+	@buf << compressed_packet
+
+	# pass at least GZIP_READER_MIN_BUF_SIZE bytes to GzipReader to avoid zlib EOF
+	if @buf.size > GZIP_READER_MIN_BUF_SIZE then
+
+	  @gzip ||= Zlib::GzipReader.new @buf
+
+	  while true do
+	    decompressed_packet = nonblock_readline(@gzip)
+	    #logger.debug "GZip:<<:decompressed_packet:#{decompressed_packet}"
+	    break if decompressed_packet.nil?
+	    process_decompressed_packet(decompressed_packet)
+	  end
+	end
+      end
+
+      def close
+	logger.debug "GZip:close"
+	decompressed_packet = ""
+	begin
+	  @gzip ||= Zlib::GzipReader.new @buf
+
+	  while true do
+	    decompressed_packet = nonblock_readline(@gzip)
+	    #logger.debug "GZip:close:decompressed_packet:#{decompressed_packet}"
+	    break if decompressed_packet.nil?
+	    process_decompressed_packet(decompressed_packet)
+	  end
+
+	rescue Zlib::Error => e
+	  raise HttpStreamingClient::DecoderError.new(e.message)
+	end
+      end
+      
+      def size
+	@buf.size
       end
 
       def nonblock_readline(io)
@@ -59,55 +110,22 @@ module HttpStreamingClient
 	    end
 	  end
 	rescue Zlib::GzipFile::Error
-	  # this is raised on EOF by ZLib, return nil to indicate EOF and leave partial line in the buffer
+	  # this is raised on EOF by ZLib in MRI, return nil to indicate EOF and leave partial line in the buffer
+	  logger.debug "Gzip:nonblock_readline:Zlib::GzipFile::Error:line_buffer.size:#{@line_buffer.size}"
 	  return nil
+	rescue IOError
+	  # this is raised on EOF by ZLib in JRuby, return nil to indicate EOF and leave partial line in the buffer
+	  logger.debug "Gzip:nonblock_readline:IOError:line_buffer.size:#{@line_buffer.size}"
+	  return nil
+        rescue => e
+	  logger.debug "Gzip:nonblock_readline:error received:#{e.class}:#{e}"
+	  raise e
 	end
       end
-
-      def <<(compressed_packet)
-	return unless compressed_packet && compressed_packet.size > 0
-	@buf ||= GZipBufferIO.new
-	@buf << compressed_packet
-
-	# pass at least 2k bytes to GzipReader to avoid zlib EOF
-	if @buf.size > 2048 then
-
-	  @gzip ||= Zlib::GzipReader.new @buf
-
-	  while true do
-	    decompressed_packet = nonblock_readline(@gzip)
-	    #logger.debug "decompressed_packet:#{decompressed_packet}"
-	    break if decompressed_packet.nil?
-	    process_decompressed_packet(decompressed_packet)
-	  end
-	end
-      end
-
-      def close
-	logger.debug "GZip:close"
-	decompressed_packet = ""
-	begin
-	  @gzip ||= Zlib::GzipReader.new @buf
-
-	  while true do
-	    decompressed_packet = nonblock_readline(@gzip)
-	    #logger.debug "decompressed_packet:#{decompressed_packet}"
-	    break if decompressed_packet.nil?
-	    process_decompressed_packet(decompressed_packet)
-	  end
-
-	rescue Zlib::Error => e
-	  raise HttpStreamingClient::DecoderError.new(e.message)
-	end
-      end
-
-      def size
-	@buf.size
-      end
-
+      
       protected
 
-      class GZipBufferIO < IO
+      class GZipBufferIO < StringIO
 
 	def logger
 	  HttpStreamingClient.logger
@@ -116,6 +134,7 @@ module HttpStreamingClient
 	def initialize(string="")
 	  logger.debug "GZipBufferIO:initialize"
 	  @packet_stream = string
+	  @packet_stream.force_encoding("BINARY")
 	end
 
 	def <<(string)
@@ -124,7 +143,7 @@ module HttpStreamingClient
 
 	# called by GzipReader
 	def readpartial(length=nil, buffer=nil)
-	  logger.debug "GZipBufferIO:readpartial:length:#{length}:@packet_stream:#{@packet_stream.nil? ? 'nil' : 'not null'}"
+	  logger.debug "GZipBufferIO:readpartial:length:#{length}:@packet_stream:#{@packet_stream.nil? ? 'nil' : @packet_stream.size}"
 	  buffer ||= ""
 
 	  raise EOFError "" if @packet_stream.size == 0
@@ -150,14 +169,14 @@ module HttpStreamingClient
 
 	# called by GzipReader
 	def read(length=nil, buffer=nil)
-	  logger.debug "read:length:#{length}"
+	  logger.debug "GZipBufferIO:read:length:#{length}"
 	  return nil if @packet_stream.size == 0
 	  readpartial(length, buffer)
 	end
 
 	# called by GzipReader
 	def size
-	  logger.debug "size():#{@packet_stream.size}"
+	  logger.debug "GZipBufferIO:size():#{@packet_stream.size}"
 	  @packet_stream.size
 	end
       end
