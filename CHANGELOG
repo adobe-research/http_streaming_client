@@ -1,3 +1,7 @@
+http_streaming_client 0.9.1 (04.30.2014)
+========================================
+* added support for dynamic HTTP header and client option generation via a duck-typed factory parameter
+
 http_streaming_client 0.9.0 (04.28.2014)
 ========================================
 * Tested and fixed for MRI ruby-2.0.0-p451 and JRuby jruby-1.7.12
