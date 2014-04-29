@@ -7,6 +7,13 @@ require 'timeout'
 require 'http_streaming_client/credentials/adobe'
 include HttpStreamingClient::Credentials::Adobe
 
+class HttpStreamingClientOptions
+  def get_options
+    authorization = HttpStreamingClient::Oauth::Adobe.generate_authorization(TOKENAPIHOST, USERNAME, PASSWORD, CLIENTID, CLIENTSECRET)
+    { :headers => {'Authorization' => "Bearer #{authorization}" } }
+  end
+end
+
 describe HttpStreamingClient do
 
   describe "adobe firehose streaming get test, GZIP compression" do
@@ -56,10 +63,44 @@ describe HttpStreamingClient do
 
   end
 
-  #describe "adobe firehose streaming get unauthorized failure" do
-  #it "should fail if authorization not provided" do
-  #expect { get STREAMURL }.to raise_error(HttpError)
-  #end
-  #end
+  describe "adobe firehose streaming get test, GZIP compressionu, authorization options factory" do
+
+    line_count = 0
+
+    it "should successfully retrieve decompressed JSON records from the firehose, authorization options factory" do
+      expect {
+	client = HttpStreamingClient::Client.new(compression: true)
+	begin
+	  status = Timeout::timeout(TIMEOUT_SEC) {
+	    response = client.get(STREAMURL, {:options_factory => HttpStreamingClientOptions.new}) { |line|
+
+	    if line.nil? then
+	      logger.debug "error:nil line received"
+	      next
+	    end
+
+	    if line.size == 0 then
+	      logger.debug "error:zero length line received"
+	      next
+	    end
+
+	    line_count = line_count + 1
+
+	    if line.eql? "\r\n" or line.eql? "\r\n\r\n" then
+	      logger.debug "Server ping received"
+	    else
+	      logger.debug "#{JSON.parse(line).to_s}"
+	    end
+
+	    client.interrupt if line_count > NUM_JSON_RECORDS_TO_RECEIVE }
+	  }
+	rescue Timeout::Error
+	  logger.debug "Timeout occurred, #{TIMEOUT_SEC} seconds elapsed"
+	  client.interrupt
+	end
+      }.to_not raise_error
+    end
+
+  end
 
 end

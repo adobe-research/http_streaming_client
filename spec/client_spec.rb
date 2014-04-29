@@ -103,4 +103,32 @@ describe HttpStreamingClient do
     it { should_not be_nil}
   end
 
+  describe "client instance get test with generated options" do
+
+    class OptionsFactory
+      def get_options
+        { :headers => { :test_header => "TestHeader" } }
+      end
+    end
+
+    client = HttpStreamingClient::Client.new(compression: false)
+    response = client.get "http://posttestserver.com/post.php",  { :options_factory => OptionsFactory.new }
+    subject { response }
+    it { should_not be_nil}
+  end
+
+  describe "client instance get test with generated options, failure test for bad factory object" do
+
+    class BadOptionsFactory
+      def get_options_incorrectly
+        { :headers => { :test_header => "TestHeader" } }
+      end
+    end
+
+    client = HttpStreamingClient::Client.new(compression: false)
+    response = client.get "http://posttestserver.com/post.php",  { :options_factory => BadOptionsFactory.new }
+    subject { response }
+    it { should_not be_nil}
+  end
+
 end

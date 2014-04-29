@@ -124,6 +124,18 @@ module HttpStreamingClient
 	uri = URI.parse(uri)
       end
 
+      options_factory = opts.delete(:options_factory)
+      if !options_factory.nil? then
+	if options_factory.respond_to? "get_options" then
+          logger.debug("Client::request:options_factory detected")
+	  generated_options = options_factory.get_options
+          logger.debug("Client::request:options_factory:#{generated_options}")
+	  opts.merge!(generated_options || {})
+	else
+          logger.warn("Client::request:options_factory detected, but does not respond to get_options(). Ignoring.")
+	end
+      end
+
       default_headers = {
 	"User-Agent" => opts["User-Agent"] || "HttpStreamingClient #{HttpStreamingClient::VERSION}",
 	"Accept" => "*/*",
