@@ -1,3 +1,7 @@
+http_streaming_client 0.9.2 (05.09.2014)
+========================================
+* Critical bug fix for GZip chunked deceompression handling
+
 http_streaming_client 0.9.1 (04.30.2014)
 ========================================
 * added support for dynamic HTTP header and client option generation via a duck-typed factory parameter

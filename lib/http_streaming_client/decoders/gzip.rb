@@ -62,16 +62,12 @@ module HttpStreamingClient
 	@buf << compressed_packet
 
 	# pass at least GZIP_READER_MIN_BUF_SIZE bytes to GzipReader to avoid zlib EOF
-	if @buf.size > GZIP_READER_MIN_BUF_SIZE then
-
+	while @buf.size > GZIP_READER_MIN_BUF_SIZE do
 	  @gzip ||= Zlib::GzipReader.new @buf
-
-	  while true do
-	    decompressed_packet = nonblock_readline(@gzip)
-	    #logger.debug "GZip:<<:decompressed_packet:#{decompressed_packet}"
-	    break if decompressed_packet.nil?
-	    process_decompressed_packet(decompressed_packet)
-	  end
+	  decompressed_packet = nonblock_readline(@gzip)
+	  #logger.debug "GZip:<<:decompressed_packet:#{decompressed_packet}"
+	  break if decompressed_packet.nil?
+	  process_decompressed_packet(decompressed_packet)
 	end
       end
 
