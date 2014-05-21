@@ -10,7 +10,7 @@ describe HttpStreamingClient do
   
     count = 0
     client = HttpStreamingClient::Client.new(compression: false)
-    response = client.get("http://localhost:3000/outbounds/consumer/1") { |line|
+    response = client.get("http://localhost:3000/outbounds/consumer") { |line|
       logger.debug "line received: #{line}"
       count = count + 1
     }
@@ -18,12 +18,12 @@ describe HttpStreamingClient do
     expect(count).to be(10)
   end
   
-  #it "should reconnect on any error or EOF" do
-  it "should reconnect on any error or EOF", :disabled => true do
+  it "should reconnect on any error or EOF" do
+  #it "should reconnect on any error or EOF", :disabled => true do
 
-    client = HttpStreamingClient::Client.new(compression: false, reconnect: true, reconnect_attempts: 5, reconnect_interval: 1)
+    client = HttpStreamingClient::Client.new(compression: false, reconnect: true, reconnect_attempts: 5, reconnect_interval: 5)
     count = 0
-    response = client.get("http://localhost:3000/outbounds/consumer/1") { |line|
+    response = client.get("http://localhost:3000/outbounds/consumer") { |line|
       logger.debug "line received: #{line}"
       count = count + 1
       client.interrupt if count > 20

@@ -124,51 +124,54 @@ module HttpStreamingClient
 	uri = URI.parse(uri)
       end
 
-      options_factory = opts.delete(:options_factory)
-      if !options_factory.nil? then
-	if options_factory.respond_to? "get_options" then
-          logger.debug("Client::request:options_factory detected")
-	  generated_options = options_factory.get_options
-          logger.debug("Client::request:options_factory:#{generated_options}")
-	  opts.merge!(generated_options || {})
-	else
-          logger.warn("Client::request:options_factory detected, but does not respond to get_options(). Ignoring.")
-	end
-      end
-
-      default_headers = {
-	"User-Agent" => opts["User-Agent"] || "HttpStreamingClient #{HttpStreamingClient::VERSION}",
-	"Accept" => "*/*",
-	"Accept-Charset" => "utf-8"
-      }
-
-      if method == "POST" || method == "PUT"
-	default_headers["Content-Type"] = opts["Content-Type"] || "application/x-www-form-urlencoded;charset=UTF-8"
-	body = opts.delete(:body)
-	if body.is_a?(Hash)
-	  body = body.keys.collect {|param| "#{URI.escape(param.to_s)}=#{URI.escape(body[param].to_s)}"}.join('&')
-	end
-	default_headers["Content-Length"] = body.length
-      end
-
-      unless uri.userinfo.nil?
-	default_headers["Authorization"] = "Basic #{[uri.userinfo].pack('m').strip!}\r\n"
-      end
-
-      encodings = []
-      encodings << "gzip" if (@compression_requested and opts[:compression].nil?) or opts[:compression]
-      if encodings.any?
-	default_headers["Accept-Encoding"] = "#{encodings.join(',')}"
-      end
-
-      headers = default_headers.merge(opts[:headers] || {})
-      logger.debug "request headers: #{headers}"
+      @reconnect_count = 0 if @reconnect_requested
+      @options_factory = opts.delete(:options_factory)
+      @static_body_option = opts[:body]
 
       begin
 
-	socket = initialize_socket(uri, opts)
+	opts[:body] = @static_body_option unless @static_body_option.nil?
 
-	@reconnect_count = 0 if @reconnect_requested
+	if !@options_factory.nil? then
+	  if @options_factory.respond_to? "get_options" then
+	    logger.info("Client::request:options_factory detected")
+	    generated_options = @options_factory.get_options
+	    logger.info("Client::request:options_factory:#{generated_options}")
+	    opts.merge!(generated_options || {})
+	  else
+	    logger.warn("Client::request:options_factory detected, but does not respond to get_options(). Ignoring.")
+	  end
+	end
+
+	default_headers = {
+	  "User-Agent" => opts["User-Agent"] || "HttpStreamingClient #{HttpStreamingClient::VERSION}",
+	  "Accept" => "*/*",
+	  "Accept-Charset" => "utf-8"
+	}
+
+	if method == "POST" || method == "PUT"
+	  default_headers["Content-Type"] = opts["Content-Type"] || "application/x-www-form-urlencoded;charset=UTF-8"
+	  body = opts.delete(:body)
+	  if body.is_a?(Hash)
+	    body = body.keys.collect {|param| "#{URI.escape(param.to_s)}=#{URI.escape(body[param].to_s)}"}.join('&')
+	  end
+	  default_headers["Content-Length"] = body.length
+	end
+
+	unless uri.userinfo.nil?
+	  default_headers["Authorization"] = "Basic #{[uri.userinfo].pack('m').strip!}\r\n"
+	end
+
+	encodings = []
+	encodings << "gzip" if (@compression_requested and opts[:compression].nil?) or opts[:compression]
+	if encodings.any?
+	  default_headers["Accept-Encoding"] = "#{encodings.join(',')}"
+	end
+
+	headers = default_headers.merge(opts[:headers] || {})
+	logger.debug "request headers: #{headers}"
+
+	socket = initialize_socket(uri, opts)
 
 	request = "#{method} #{uri.path}#{uri.query ? "?"+uri.query : nil} HTTP/1.1\r\n"
 	request << "Host: #{uri.host}\r\n"
@@ -254,7 +257,7 @@ module HttpStreamingClient
 		logger.debug "read #{line.size} uncompressed bytes, #{response.size} bytes total, decoder queue bytes:#{decoder.size}"
 		response << line unless @interrupted }
 	    end
-          else
+	  else
 	    logger.debug "chunked transfer encoding with no compression detected"
 	    if block_given? then
 	      decoder = HttpStreamingClient::Decoders::Chunked.new { |line|
@@ -295,8 +298,8 @@ module HttpStreamingClient
 	    decoder << partial
 
 	    if !block_given? then
-              logger.debug "no block specified, returning chunk results and halting streaming response"
-              return response
+	      logger.debug "no block specified, returning chunk results and halting streaming response"
+	      return response
 	    else
 	      return if @interrupted and response_compression
 	      return response if @interrupted
@@ -380,11 +383,12 @@ module HttpStreamingClient
 	if @reconnect_requested then
 	  logger.info "Connection closed. Reconnect requested. Trying..."
 	  @reconnect_count = @reconnect_count + 1
+	  logger.info "@reconnect_count is #{@reconnect_count} of #{@reconnect_attempts}, sleeping for #{@reconnect_interval}..."
 	  sleep @reconnect_interval
 	  retry if @reconnect_count < @reconnect_attempts
 	  logger.info "Maximum number of failed reconnect attempts reached (#{@reconnect_attempts}). Exiting."
 	end
-	
+
 	raise e unless e.instance_of? ReconnectRequest
       end
     ensure
