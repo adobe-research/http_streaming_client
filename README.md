@@ -7,7 +7,7 @@ Ruby HTTP client with support for HTTP 1.1 streaming, GZIP and zlib compressed s
 
 ## Ruby Version
 
-MRI ruby-2.0.0-p451 and JRuby jruby-1.7.12. Install via rvm: https://rvm.io/
+MRI 2.1.1p76 and JRuby jruby-1.7.12. Install via rvm: https://rvm.io/
 
 ## Installation
 

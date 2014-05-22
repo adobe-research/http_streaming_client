@@ -1,4 +1,9 @@
-http_streaming_client 0.9.2 (05.09.2014)
+http_streaming_client 0.9.4 (05.22.2014)
+========================================
+* Fixed bug with reconnect management and lazy authorization header generation
+* Tested and updated for MRI ruby-2.1.1p76 and JRuby jruby-1.7.12
+
+http_streaming_client 0.9.3 (05.09.2014)
 ========================================
 * Critical bug fix for GZip chunked deceompression handling
 
