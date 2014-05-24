@@ -40,6 +40,18 @@ module HttpStreamingClient
       "\033[0;37m[%s] \033[#{color}m%5s - %s\033[0m\n" % [time.to_s, severity, msg]
     end
   end
+  
+  class BasicLogFormatter < Logger::Formatter
+
+    def call(severity, time, progname, msg)
+      "[%s] %s%s - %s\n" % [time.to_s, severity, @tag.nil? ? "" : "(#{@tag})", msg]
+    end
+
+    def tag=(tag)
+      @tag = tag
+    end
+
+  end
 
   class CustomLoggerInternal
 
@@ -59,16 +71,22 @@ module HttpStreamingClient
     def logfile=(enable)
       return (@logfile = nil) if !enable
       @logfile = Logger.new("test.log")
-      @logfile.formatter = ColoredLogFormatter.new
+      @logfile.formatter = BasicLogFormatter.new
       @logfile.level = Logger::DEBUG
     end
 
     def console=(enable)
       return (@console = nil) if !enable
       @console = Logger.new(STDOUT)
-      @console.formatter = ColoredLogFormatter.new
+      @console.formatter = BasicLogFormatter.new
       @console.level = Logger::INFO
     end
+    
+    def tag=(tag)
+      @console.formatter.tag = tag unless @console.nil?
+      @logfile.formatter.tag = tag unless @logfile.nil?
+    end
+
 
   end
 
@@ -82,4 +100,5 @@ module HttpStreamingClient
   def self.logger=(logger)
     @custom_logger_internal = logger
   end
+
 end

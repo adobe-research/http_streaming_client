@@ -1,3 +1,7 @@
+http_streaming_client 0.9.5 (05.23.2014)
+========================================
+* Added logging tag functions to add tags to log messages for multi-threaded environments
+
 http_streaming_client 0.9.4 (05.22.2014)
 ========================================
 * Fixed bug with reconnect management and lazy authorization header generation

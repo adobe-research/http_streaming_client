@@ -20,6 +20,7 @@ RSpec.configure do |config|
   HttpStreamingClient.logger.console = true
   HttpStreamingClient.logger.level = Logger::DEBUG
   HttpStreamingClient.logger.logfile = true
+  HttpStreamingClient.logger.tag = "rspec"
 
   config.filter_run_excluding disabled: true
 

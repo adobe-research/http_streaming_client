@@ -134,9 +134,9 @@ module HttpStreamingClient
 
 	if !@options_factory.nil? then
 	  if @options_factory.respond_to? "get_options" then
-	    logger.info("Client::request:options_factory detected")
+	    logger.debug("Client::request:options_factory detected")
 	    generated_options = @options_factory.get_options
-	    logger.info("Client::request:options_factory:#{generated_options}")
+	    logger.debug("Client::request:options_factory:#{generated_options}")
 	    opts.merge!(generated_options || {})
 	  else
 	    logger.warn("Client::request:options_factory detected, but does not respond to get_options(). Ignoring.")
@@ -172,6 +172,7 @@ module HttpStreamingClient
 	logger.debug "request headers: #{headers}"
 
 	socket = initialize_socket(uri, opts)
+	logger.info("Connected to #{uri}")
 
 	request = "#{method} #{uri.path}#{uri.query ? "?"+uri.query : nil} HTTP/1.1\r\n"
 	request << "Host: #{uri.host}\r\n"
@@ -383,7 +384,7 @@ module HttpStreamingClient
 	if @reconnect_requested then
 	  logger.info "Connection closed. Reconnect requested. Trying..."
 	  @reconnect_count = @reconnect_count + 1
-	  logger.info "@reconnect_count is #{@reconnect_count} of #{@reconnect_attempts}, sleeping for #{@reconnect_interval}..."
+	  logger.info "Reconnect attempt #{@reconnect_count} of #{@reconnect_attempts}, sleeping for #{@reconnect_interval} seconds..."
 	  sleep @reconnect_interval
 	  retry if @reconnect_count < @reconnect_attempts
 	  logger.info "Maximum number of failed reconnect attempts reached (#{@reconnect_attempts}). Exiting."
