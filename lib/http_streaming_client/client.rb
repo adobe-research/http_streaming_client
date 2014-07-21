@@ -300,16 +300,24 @@ module HttpStreamingClient
 
 	    if !block_given? then
 	      logger.debug "no block specified, returning chunk results and halting streaming response"
+	      # flush any remaining uncompressed chunked decoder bytes into response by pushing a newline
+	      decoder << "\n" if !response_compression and decoder.size > 0
 	      return response
 	    else
-	      return if @interrupted and response_compression
-	      return response if @interrupted
+	      if @interrupted then
+		return if response_compression
+	        # flush any remaining uncompressed chunked decoder bytes into response by pushing a newline
+	        decoder << "\n" if !response_compression and decoder.size > 0
+		return response
+	      end
 	    end
 
 	  end
 
 	  logger.debug "socket EOF detected" if socket.eof?
 	  raise ReconnectRequest if @reconnect_requested
+          # flush any remaining uncompressed chunked decoder bytes into response by pushing a newline
+          decoder << "\n" if !response_compression and decoder.size > 0
 	  return response
 
 	else

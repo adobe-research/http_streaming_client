@@ -1,3 +1,7 @@
+http_streaming_client 0.9.6 (07.21.2014)
+========================================
+* Fixed bug with connection close and uncompressed chunked transfer encoding
+
 http_streaming_client 0.9.5 (05.23.2014)
 ========================================
 * Added logging tag functions to add tags to log messages for multi-threaded environments
