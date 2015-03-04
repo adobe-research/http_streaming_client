@@ -208,10 +208,10 @@ module HttpStreamingClient
 
 	logger.debug "response headers:#{response_head[:headers]}"
 
-	if response_head[:code] == 301 then
+	if response_head[:code] == 301 or response_head[:code] == 302 then
 	  location = response_head[:headers]["Location"]
-	  raise InvalidRedirect, "Unable to find Location header for HTTP 301 response" if location.nil?
-	  logger.warn "Received HTTP 301 redirect to #{location}, following..."
+	  raise InvalidRedirect, "Unable to find Location header for HTTP #{response_head[:code]} response" if location.nil?
+	  logger.warn "Received HTTP #{response_head[:code]} redirect to #{location}, following..."
 	  socket.close if !socket.nil? and !socket.closed?
 	  opts.delete(:socket)
 	  return request(method, location, opts, &block)
