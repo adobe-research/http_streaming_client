@@ -60,10 +60,10 @@ module HttpStreamingClient
 	return unless compressed_packet && compressed_packet.size > 0
 	@buf ||= GZipBufferIO.new
 	@buf << compressed_packet
+	@gzip ||= Zlib::GzipReader.new @buf
 
 	# pass at least GZIP_READER_MIN_BUF_SIZE bytes to GzipReader to avoid zlib EOF
 	while @buf.size > GZIP_READER_MIN_BUF_SIZE do
-	  @gzip ||= Zlib::GzipReader.new @buf
 	  decompressed_packet = nonblock_readline(@gzip)
 	  #logger.debug "GZip:<<:decompressed_packet:#{decompressed_packet}"
 	  break if decompressed_packet.nil?
@@ -73,14 +73,16 @@ module HttpStreamingClient
 
       def close
 	logger.debug "GZip:close"
+	return if @buf.size == 0
+
 	decompressed_packet = ""
 	begin
 	  @gzip ||= Zlib::GzipReader.new @buf
 
 	  while true do
-	    decompressed_packet = nonblock_readline(@gzip)
-	    #logger.debug "GZip:close:decompressed_packet:#{decompressed_packet}"
-	    break if decompressed_packet.nil?
+	    decompressed_packet = nonblock_readline(@gzip, true)
+	    logger.debug "GZip:close:decompressed_packet:#{decompressed_packet}"
+	    break if decompressed_packet.nil? or decompressed_packet.size == 0
 	    process_decompressed_packet(decompressed_packet)
 	  end
 
@@ -93,7 +95,7 @@ module HttpStreamingClient
 	@buf.size
       end
 
-      def nonblock_readline(io)
+      def nonblock_readline(io, on_close = false)
 	@line_buffer ||= ""
 	ch = nil
 	begin
@@ -106,17 +108,38 @@ module HttpStreamingClient
 	    end
 	  end
 	rescue Zlib::GzipFile::Error
-	  # this is raised on EOF by ZLib in MRI, return nil to indicate EOF and leave partial line in the buffer
+	  # this is raised on EOF by ZLib in MRI
+	  # if we get here via a call to close(), then we want to return the line_buffer
+	  # if we get here via any other path, we want to return nil to signal temporary EOF and leave the partial line_buffer contents in place.
 	  logger.debug "Gzip:nonblock_readline:Zlib::GzipFile::Error:line_buffer.size:#{@line_buffer.size}"
+	  if on_close then
+	    result = @line_buffer
+	    @line_buffer = ""
+	    return result
+	  end
 	  return nil
 	rescue IOError
 	  # this is raised on EOF by ZLib in JRuby, return nil to indicate EOF and leave partial line in the buffer
+	  # if we get here via a call to close(), then we want to return the line_buffer
+	  # if we get here via any other path, we want to return nil to signal temporary EOF and leave the partial line_buffer contents in place.
 	  logger.debug "Gzip:nonblock_readline:IOError:line_buffer.size:#{@line_buffer.size}"
+	  if on_close then
+	    result = @line_buffer
+	    @line_buffer = ""
+	    return result
+	  end
 	  return nil
         rescue => e
 	  logger.debug "Gzip:nonblock_readline:error received:#{e.class}:#{e}"
 	  raise e
 	end
+	  
+	if on_close then
+	  result = @line_buffer
+	  @line_buffer = ""
+	  return result
+	end
+
       end
       
       protected

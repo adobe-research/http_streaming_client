@@ -49,6 +49,7 @@ describe HttpStreamingClient do
 	response = client.get(url, {:headers => {'Authorization' => "#{authorization}" }}) { |line|
 	count = count + 1
 	if count > NUM_JSON_RECORDS_TO_RECEIVE then
+	  logger.debug "#{NUM_JSON_RECORDS_TO_RECEIVE} records received, interrupting..."
 	  client.interrupt
 	  next
 	end

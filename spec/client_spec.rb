@@ -11,7 +11,7 @@ describe HttpStreamingClient do
 
   describe "client instance get test, no chunked transfer encosing and GZIP compression" do
     client = HttpStreamingClient::Client.new
-    response = client.get "http://screamradius.com/"
+    response = client.get "https://screamradius.com/"
     logger.debug "response: #{response}"
     subject { response }
     it { should_not be_nil}

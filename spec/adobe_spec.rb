@@ -63,7 +63,7 @@ describe HttpStreamingClient do
 
   end
 
-  describe "adobe firehose streaming get test, GZIP compressionu, authorization options factory" do
+  describe "adobe firehose streaming get test, GZIP compression, authorization options factory" do
 
     line_count = 0
 

@@ -61,8 +61,13 @@ module HttpStreamingClient
 	url_string = "#{uri.scheme}://#{uri.host}#{uri.path}"
 
 	# POST to uri
-	response = HttpStreamingClient::Client.post(uri, params_string, {:headers => {'Authorization' => "Basic #{basicAuth}"}})
-	response_json = JSON.parse(response)
+	assembled_response = ""
+	response = HttpStreamingClient::Client.post(uri, params_string, {:headers => {'Authorization' => "Basic #{basicAuth}"}}) { |line|
+	  # token server now sending chunked, gzip'd response...
+	  logger.debug "line received: #{line}"
+	  assembled_response << line
+	}
+	response_json = JSON.parse(assembled_response)
 
 	logger.debug "token API response: #{response_json}"
 
